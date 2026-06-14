@@ -5,4 +5,4 @@ Layering (see docs/DEVELOPING.md): ``tui`` -> ``app`` -> ``domain``;
 ``domain`` never import each other.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"

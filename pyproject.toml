@@ -1,6 +1,6 @@
 [project]
 name = "monay"
-version = "1.0.0"
+version = "1.0.1"
 description = "A modern terminal budget app with monthly rollover logic."
 requires-python = ">=3.14"
 dependencies = [

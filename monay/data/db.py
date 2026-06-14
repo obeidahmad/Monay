@@ -7,9 +7,6 @@ per connection so the schema's foreign keys are actually enforced.
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
-
 import sqlalchemy as sa
 from sqlalchemy import delete, event, select
 from sqlalchemy.pool import StaticPool
@@ -49,8 +46,6 @@ def run_migrations(engine: sa.Engine) -> None:
 
 
 def _ordered_migrations() -> list:
-    modules = []
-    for info in pkgutil.iter_modules(_migrations.__path__):
-        if info.name[0].isdigit():
-            modules.append(importlib.import_module(f"{_migrations.__name__}.{info.name}"))
-    return sorted(modules, key=lambda m: m.version)
+    # Explicit registry (monay/data/migrations/__init__.py), not filesystem
+    # discovery — so migrations also run inside a frozen PyInstaller binary.
+    return sorted(_migrations.ALL, key=lambda m: m.version)

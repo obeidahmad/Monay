@@ -12,14 +12,16 @@ from monay.bootstrap import build_container
 
 def main() -> None:
     container = build_container()
+    service = container.app_service()
     from monay.tui.app import Monay  # imported lazily so non-TUI uses stay light
 
-    app = Monay(container.app_service(), container.registry())
+    app = Monay(service, container.registry())
 
-    # MONAY_SELFCHECK builds + wires everything (migrations, services, the TUI
-    # app object) without starting the event loop — a no-TTY smoke test for the
-    # packaged binary. See .github/workflows/build.yml.
+    # MONAY_SELFCHECK builds + wires everything and hits the database (so a
+    # missing migration / table surfaces) without starting the event loop — a
+    # no-TTY smoke test for the packaged binary. See .github/workflows/build.yml.
     if os.environ.get("MONAY_SELFCHECK"):
+        service.resume()  # queries the profiles table
         print("monay selfcheck ok")
         return
 
