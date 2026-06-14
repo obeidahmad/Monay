@@ -1,0 +1,41 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- uv / virtualenv ---
+.venv/
+venv/
+
+# --- PyInstaller build output ---
+build/
+dist/
+*.manifest
+
+# --- Monay user data: the database holds REAL finances — never commit it ---
+monay.db
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Private: the original personal spreadsheet + its dumps/scripts ---
+legacy_excel/
+
+# --- OS / editors / local tooling ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+.claude/settings.local.json
+
+# --- Logs / temp ---
+*.log
+
+# --- Personal scratch notes (delete this line if you want them tracked) ---
+docs/changes

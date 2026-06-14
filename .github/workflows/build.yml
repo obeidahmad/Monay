@@ -1,0 +1,116 @@
+name: build
+
+# Build standalone binaries for Linux + Windows (x86_64 and arm64), with a
+# SHA256SUMS checksum file, and publish them to GitHub Releases:
+#
+#   * every push to main  -> a rolling "latest" pre-release (replaced each push)
+#   * a version tag (v*)  -> a stable, versioned release
+#
+# Running it manually from the Actions tab just builds the binaries (no release).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: write # create releases and upload assets
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-latest
+            artifact: monay-linux-x86_64
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+            artifact: monay-linux-aarch64
+          - target: windows-x86_64
+            runner: windows-latest
+            artifact: monay-windows-x86_64.exe
+          - target: windows-arm64
+            runner: windows-11-arm
+            artifact: monay-windows-arm64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Sync runtime + build dependencies
+        run: uv sync --no-dev --group build
+
+      - name: Build the binary
+        run: uv run --no-dev --group build pyinstaller monay.spec
+
+      - name: Stage artifact
+        shell: bash
+        run: |
+          mkdir -p out
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv dist/monay.exe "out/${{ matrix.artifact }}"
+          else
+            mv dist/monay "out/${{ matrix.artifact }}"
+            chmod +x "out/${{ matrix.artifact }}"
+          fi
+
+      - name: Smoke-test the binary
+        shell: bash
+        env:
+          MONAY_SELFCHECK: "1"
+        run: |
+          workdir="$(mktemp -d)"
+          ( cd "$workdir" && "$GITHUB_WORKSPACE/out/${{ matrix.artifact }}" )
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: out/${{ matrix.artifact }}
+
+  release:
+    name: release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' # main pushes + version tags, not manual runs
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download all binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Gather binaries + generate checksums
+        run: |
+          mkdir -p dist
+          find artifacts -type f -exec cp {} dist/ \;
+          cd dist
+          sha256sum monay-* > SHA256SUMS.txt
+          echo "----- SHA256SUMS.txt -----"
+          cat SHA256SUMS.txt
+
+      - name: Publish stable release (version tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Monay $GITHUB_REF_NAME" \
+            --notes "Standalone binaries for Linux and Windows (x86_64 + arm64). Verify with SHA256SUMS.txt."
+
+      - name: Publish rolling 'latest' (push to main)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gh release delete latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create latest dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Latest build (main)" \
+            --notes "Rolling build from the newest commit on main ($GITHUB_SHA). Verify with SHA256SUMS.txt."

@@ -1,0 +1,36 @@
+[project]
+name = "monay"
+version = "1.0.0"
+description = "A modern terminal budget app with monthly rollover logic."
+requires-python = ">=3.14"
+dependencies = [
+    "textual>=8.2.7",
+    "sqlalchemy>=2.0",
+    "dependency-injector>=4.49",
+]
+
+[dependency-groups]
+# Opt-in (not synced by default): packages the app into a standalone binary so
+# end users run a single download with no Python/deps. Build per-OS (PyInstaller
+# can't cross-compile): `uv run --group build pyinstaller ...`. Verified bundling
+# textual + sqlalchemy + dependency-injector on 3.14. See docs/ARCHITECTURE.md §11.
+build = [
+    "pyinstaller>=6.20.0",
+]
+dev = [
+    "pytest>=9",
+    "openpyxl>=3.1", # only for the throwaway legacy_excel/ inspection scripts; app never imports Excel
+]
+
+# Not a distributable package (yet): uv just manages the environment.
+# Flip to a packaged project (add a build backend + [project.scripts]) when the
+# TUI entry point lands.
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+# The package isn't installed (package = false), so put the project root on
+# sys.path for `import monay`. testpaths keeps collection to tests/.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-ra"
