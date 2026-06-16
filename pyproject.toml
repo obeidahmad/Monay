@@ -1,6 +1,10 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
 [project]
 name = "monay"
-version = "1.0.1"
+dynamic = ["version"] # derived from the git tag by hatch-vcs (see docs/RELEASING.md)
 description = "A modern terminal budget app with monthly rollover logic."
 requires-python = ">=3.14"
 dependencies = [
@@ -25,12 +29,22 @@ dev = [
 # Not a distributable package (yet): uv just manages the environment.
 # Flip to a packaged project (add a build backend + [project.scripts]) when the
 # TUI entry point lands.
-[tool.uv]
-package = false
+# Version comes from the git tag — no hand-maintained version string anywhere.
+# hatch-vcs resolves it at build time and writes monay/_version.py (gitignored),
+# which the frozen PyInstaller binary imports at runtime.
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "monay/_version.py"
+
+# Ship only the monay package; legacy_excel/ is private scratch, not part of it.
+[tool.hatch.build.targets.wheel]
+packages = ["monay"]
 
 [tool.pytest.ini_options]
-# The package isn't installed (package = false), so put the project root on
-# sys.path for `import monay`. testpaths keeps collection to tests/.
+# Keep the project root on sys.path so `import monay` resolves the source tree.
+# testpaths keeps collection to tests/.
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"
