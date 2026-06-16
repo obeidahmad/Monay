@@ -22,7 +22,9 @@ def main() -> None:
     # no-TTY smoke test for the packaged binary. See .github/workflows/build.yml.
     if os.environ.get("MONAY_SELFCHECK"):
         service.resume()  # queries the profiles table
-        print("monay selfcheck ok")
+        from monay import __version__  # confirms the baked-in version resolved
+
+        print(f"monay {__version__} selfcheck ok")
         return
 
     app.run()

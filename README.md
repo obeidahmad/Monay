@@ -177,9 +177,9 @@ uv run --group build pyinstaller monay.spec    # → dist/monay  (or dist/monay.
 ```
 
 The [`.github/workflows/build.yml`](.github/workflows/build.yml) workflow builds
-**Linux** and **Windows** binaries for both **x86_64** and **arm64**, with a
-`SHA256SUMS.txt` checksum file: a rolling **`latest`** pre-release on every push
-to `main`, and a stable versioned release on each **`v*`** tag.
+**Linux** and **Windows** binaries for both **x86_64** and **arm64**, and
+publishes them as a stable versioned release on each **`v*`** tag (see
+[docs/RELEASING.md](docs/RELEASING.md)).
 
 ## 📁 Project layout
 

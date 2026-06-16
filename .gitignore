@@ -17,6 +17,9 @@ build/
 dist/
 *.manifest
 
+# --- Generated at build time by hatch-vcs (version derived from the git tag) ---
+monay/_version.py
+
 # --- Monay user data: the database holds REAL finances — never commit it ---
 monay.db
 *.db

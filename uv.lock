@@ -156,8 +156,7 @@ wheels = [
 
 [[package]]
 name = "monay"
-version = "1.0.1"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "dependency-injector" },
     { name = "sqlalchemy" },

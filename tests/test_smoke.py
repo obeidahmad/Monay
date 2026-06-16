@@ -5,7 +5,7 @@ import importlib
 
 def test_package_imports():
     monay = importlib.import_module("monay")
-    assert monay.__version__ == "1.0.1"
+    assert isinstance(monay.__version__, str) and monay.__version__
 
 
 def test_layer_packages_import():
