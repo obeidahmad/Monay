@@ -7,11 +7,8 @@ from __future__ import annotations
 from . import handlers as h
 from .registry import (
     AMOUNT,
-    Arg,
     CAP,
     CHOICE,
-    CommandRegistry,
-    CommandSpec,
     DAY,
     FIELD,
     INT,
@@ -20,6 +17,9 @@ from .registry import (
     SECTION,
     TEXT,
     WORD,
+    Arg,
+    CommandRegistry,
+    CommandSpec,
 )
 
 _TABS = ("budget", "transactions", "pockets", "history", "settings")
@@ -45,7 +45,8 @@ SPECS: list[CommandSpec] = [
             Arg("day", DAY, required=False),
             Arg("note", TEXT, required=False, variadic=True),
         ),
-        "Move accumulated pot money between fields (refused if it breaks the target's MAX).",
+        "Move accumulated pot money between fields "
+        "(refused if it breaks the target's MAX).",
         h.h_transfer,
     ),
     CommandSpec(
@@ -56,7 +57,11 @@ SPECS: list[CommandSpec] = [
     ),
     CommandSpec(
         ("tx", "edit"),
-        (Arg("index", INT), Arg("attr", CHOICE, choices=("amount", "day", "desc")), Arg("value", WORD)),
+        (
+            Arg("index", INT),
+            Arg("attr", CHOICE, choices=("amount", "day", "desc")),
+            Arg("value", WORD),
+        ),
         "Edit a transaction by its #.",
         h.h_tx_edit,
     ),
@@ -68,17 +73,27 @@ SPECS: list[CommandSpec] = [
         confirm=True,
         summary=h._del_summary("transaction"),
     ),
-    CommandSpec(("open",), (Arg("section", SECTION),), "Drill into a section.", h.h_open),
+    CommandSpec(
+        ("open",), (Arg("section", SECTION),), "Drill into a section.", h.h_open
+    ),
     CommandSpec(("back",), (), "Return to the section list.", h.h_back),
     CommandSpec(
         ("section", "add"),
-        (Arg("kind", CHOICE, choices=("pre", "post")), Arg("name", WORD), Arg("alloc", WORD)),
+        (
+            Arg("kind", CHOICE, choices=("pre", "post")),
+            Arg("name", WORD),
+            Arg("alloc", WORD),
+        ),
         "Create a section (pre: %% or fixed amount; post: %%).",
         h.h_section_add,
     ),
     CommandSpec(
         ("section", "set"),
-        (Arg("name", SECTION), Arg("attr", CHOICE, choices=("pct", "amount", "name", "rest")), Arg("value", WORD)),
+        (
+            Arg("name", SECTION),
+            Arg("attr", CHOICE, choices=("pct", "amount", "name", "rest")),
+            Arg("value", WORD),
+        ),
         "Edit a section; rest = routing (income / self / <section>).",
         h.h_section_set,
     ),
@@ -133,7 +148,11 @@ SPECS: list[CommandSpec] = [
     ),
     CommandSpec(
         ("income", "set"),
-        (Arg("name", WORD), Arg("attr", CHOICE, choices=("name", "amount")), Arg("value", WORD)),
+        (
+            Arg("name", WORD),
+            Arg("attr", CHOICE, choices=("name", "amount")),
+            Arg("value", WORD),
+        ),
         "Edit an income entry.",
         h.h_income_set,
     ),
@@ -145,15 +164,27 @@ SPECS: list[CommandSpec] = [
         confirm=True,
         summary=h._del_summary("income"),
     ),
-    CommandSpec(("pocket", "add"), (Arg("name", WORD),), "Add a pocket.", h.h_pocket_add),
+    CommandSpec(
+        ("pocket", "add"), (Arg("name", WORD),), "Add a pocket.", h.h_pocket_add
+    ),
     CommandSpec(
         ("pocket", "rename"),
         (Arg("old", POCKET), Arg("new", WORD)),
         "Rename a pocket.",
         h.h_pocket_rename,
     ),
-    CommandSpec(("pocket", "del"), (Arg("name", POCKET),), "Delete an unused pocket.", h.h_pocket_del),
-    CommandSpec(("pocket", "main"), (Arg("name", POCKET),), "Make a pocket the default.", h.h_pocket_main),
+    CommandSpec(
+        ("pocket", "del"),
+        (Arg("name", POCKET),),
+        "Delete an unused pocket.",
+        h.h_pocket_del,
+    ),
+    CommandSpec(
+        ("pocket", "main"),
+        (Arg("name", POCKET),),
+        "Make a pocket the default.",
+        h.h_pocket_main,
+    ),
     CommandSpec(
         ("month",),
         (Arg("key", MONTH, required=False),),
@@ -168,10 +199,27 @@ SPECS: list[CommandSpec] = [
         confirm=True,
         summary=h.close_summary,
     ),
-    CommandSpec(("goto",), (Arg("tab", CHOICE, choices=_TABS),), "Switch tab.", h.h_goto),
-    CommandSpec(("profile", "add"), (Arg("name", WORD),), "Create and select a profile.", h.h_profile_add),
-    CommandSpec(("profile", "switch"), (Arg("name", WORD),), "Switch to a profile.", h.h_profile_switch),
-    CommandSpec(("profile", "rename"), (Arg("name", WORD),), "Rename the current profile.", h.h_profile_rename),
+    CommandSpec(
+        ("goto",), (Arg("tab", CHOICE, choices=_TABS),), "Switch tab.", h.h_goto
+    ),
+    CommandSpec(
+        ("profile", "add"),
+        (Arg("name", WORD),),
+        "Create and select a profile.",
+        h.h_profile_add,
+    ),
+    CommandSpec(
+        ("profile", "switch"),
+        (Arg("name", WORD),),
+        "Switch to a profile.",
+        h.h_profile_switch,
+    ),
+    CommandSpec(
+        ("profile", "rename"),
+        (Arg("name", WORD),),
+        "Rename the current profile.",
+        h.h_profile_rename,
+    ),
     CommandSpec(
         ("profile", "del"),
         (Arg("name", WORD),),

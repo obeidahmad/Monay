@@ -30,7 +30,9 @@ _TABS = ("budget", "transactions", "pockets", "history", "settings")
 class Monay(App):
     CSS = f"""
     Screen {{ background: {theme.BG}; }}
-    #context {{ height: 1; background: {theme.PANEL}; color: {theme.TEXT}; padding: 0 1; }}
+    #context {{
+        height: 1; background: {theme.PANEL}; color: {theme.TEXT}; padding: 0 1;
+    }}
     Tabs {{ background: {theme.TABS_BG}; }}
     #content {{ height: 1fr; padding: 1 2; color: {theme.TEXT}; }}
     #feedback {{ height: 1; padding: 0 1; color: {theme.OK}; }}

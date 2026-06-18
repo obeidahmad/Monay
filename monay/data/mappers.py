@@ -51,7 +51,9 @@ def update_month(conn, month: Month) -> None:
     conn.execute(
         update(months)
         .where(months.c.id == month.id)
-        .values(state=month.state.value, key=str(month.key), profile_id=month.profile_id)
+        .values(
+            state=month.state.value, key=str(month.key), profile_id=month.profile_id
+        )
     )
     _insert_children(conn, month.id, month)
 
@@ -71,7 +73,10 @@ def _insert_children(conn, month_id: int, month: Month) -> None:
     for p in sorted(month.pockets, key=lambda p: p.position):
         p.id = conn.execute(
             pockets.insert().values(
-                month_id=month_id, name=p.name, is_default=p.is_default, position=p.position
+                month_id=month_id,
+                name=p.name,
+                is_default=p.is_default,
+                position=p.position,
             )
         ).inserted_primary_key[0]
         pocket_ids[p.name] = p.id
@@ -150,7 +155,10 @@ def _alloc_value(section: Section) -> str:
 def delete_profile(conn, profile_id: int) -> None:
     """Cascade-delete a profile and all of its months + their children."""
     month_ids = [
-        r.id for r in conn.execute(select(months.c.id).where(months.c.profile_id == profile_id))
+        r.id
+        for r in conn.execute(
+            select(months.c.id).where(months.c.profile_id == profile_id)
+        )
     ]
     for mid in month_ids:
         _delete_children(conn, mid)
@@ -161,7 +169,9 @@ def delete_profile(conn, profile_id: int) -> None:
 # --- load -----------------------------------------------------------------
 def load_month(conn, profile_id: int, key: MonthKey) -> Month | None:
     row = conn.execute(
-        select(months).where(months.c.profile_id == profile_id, months.c.key == str(key))
+        select(months).where(
+            months.c.profile_id == profile_id, months.c.key == str(key)
+        )
     ).one_or_none()
     if row is None:
         return None
@@ -177,13 +187,17 @@ def load_month(conn, profile_id: int, key: MonthKey) -> Month | None:
     for pr in conn.execute(
         select(pockets).where(pockets.c.month_id == row.id).order_by(pockets.c.position)
     ):
-        p = Pocket(name=pr.name, is_default=bool(pr.is_default), position=pr.position, id=pr.id)
+        p = Pocket(
+            name=pr.name, is_default=bool(pr.is_default), position=pr.position, id=pr.id
+        )
         month.pockets.append(p)
         pocket_by_id[pr.id] = p
 
     field_by_id: dict[int, Field] = {}
     for sr in conn.execute(
-        select(sections).where(sections.c.month_id == row.id).order_by(sections.c.position)
+        select(sections)
+        .where(sections.c.month_id == row.id)
+        .order_by(sections.c.position)
     ):
         s = Section(
             name=sr.name,
@@ -198,7 +212,9 @@ def load_month(conn, profile_id: int, key: MonthKey) -> Month | None:
         )
         month.sections.append(s)
         for fr in conn.execute(
-            select(fields).where(fields.c.section_id == sr.id).order_by(fields.c.position)
+            select(fields)
+            .where(fields.c.section_id == sr.id)
+            .order_by(fields.c.position)
         ):
             cap = Cap.infinite() if fr.cap_kind == "inf" else Cap.finite(fr.cap_value)
             f = Field(
@@ -217,10 +233,18 @@ def load_month(conn, profile_id: int, key: MonthKey) -> Month | None:
         select(incomes).where(incomes.c.month_id == row.id).order_by(incomes.c.position)
     ):
         month.incomes.append(
-            Income(name=ir.name, amount=ir.amount, kind=IncomeKind(ir.kind), position=ir.position, id=ir.id)
+            Income(
+                name=ir.name,
+                amount=ir.amount,
+                kind=IncomeKind(ir.kind),
+                position=ir.position,
+                id=ir.id,
+            )
         )
     for tr in conn.execute(
-        select(transactions).where(transactions.c.month_id == row.id).order_by(transactions.c.id)
+        select(transactions)
+        .where(transactions.c.month_id == row.id)
+        .order_by(transactions.c.id)
     ):
         month.transactions.append(
             Transaction(

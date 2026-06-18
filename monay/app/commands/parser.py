@@ -11,10 +11,10 @@ from __future__ import annotations
 import re
 import shlex
 
-from monay.app.errors import BadUsage, UnknownCommand
+from monay.app.errors import BadUsageError, UnknownCommandError
 from monay.domain.expressions import evaluate
 
-from .registry import AMOUNT, CHOICE, CommandSpec, DAY, INT, CommandRegistry
+from .registry import AMOUNT, CHOICE, DAY, INT, CommandRegistry, CommandSpec
 
 _DAY_RE = re.compile(r"^d(\d+)$", re.IGNORECASE)
 
@@ -23,13 +23,13 @@ def tokenize(text: str) -> list[str]:
     try:
         return shlex.split(text)
     except ValueError as exc:
-        raise BadUsage(f"could not parse the command ({exc})")
+        raise BadUsageError(f"could not parse the command ({exc})") from exc
 
 
 def parse(registry: CommandRegistry, text: str) -> tuple[CommandSpec, dict]:
     tokens = tokenize(text)
     if not tokens:
-        raise BadUsage("type a command — try: help")
+        raise BadUsageError("type a command — try: help")
 
     spec = None
     rest: list[str] = []
@@ -42,7 +42,7 @@ def parse(registry: CommandRegistry, text: str) -> tuple[CommandSpec, dict]:
         if spec is not None:
             rest = tokens[1:]
     if spec is None:
-        raise UnknownCommand(f"unknown command: {tokens[0]!r} — try: help")
+        raise UnknownCommandError(f"unknown command: {tokens[0]!r} — try: help")
 
     return spec, _bind(spec, rest)
 
@@ -66,18 +66,18 @@ def _bind(spec: CommandSpec, tokens: list[str]) -> dict:
             joined = " ".join(tokens)
             tokens = []
             if not joined and arg.required:
-                raise BadUsage(f"missing {arg.name} — usage: {spec.usage()}")
+                raise BadUsageError(f"missing {arg.name} — usage: {spec.usage()}")
             values[arg.name] = joined or None
             break
         if not tokens:
             if arg.required:
-                raise BadUsage(f"missing {arg.name} — usage: {spec.usage()}")
+                raise BadUsageError(f"missing {arg.name} — usage: {spec.usage()}")
             values[arg.name] = None
             continue
         values[arg.name] = _convert(arg, tokens.pop(0), spec)
 
     if tokens:
-        raise BadUsage(f"too many arguments — usage: {spec.usage()}")
+        raise BadUsageError(f"too many arguments — usage: {spec.usage()}")
     return values
 
 
@@ -87,11 +87,13 @@ def _convert(arg, token: str, spec: CommandSpec):
     if arg.kind == INT:
         try:
             return int(token)
-        except ValueError:
-            raise BadUsage(f"{arg.name} must be a whole number, got {token!r}")
+        except ValueError as exc:
+            raise BadUsageError(
+                f"{arg.name} must be a whole number, got {token!r}"
+            ) from exc
     if arg.kind == CHOICE:
         for choice in arg.choices:
             if choice.lower() == token.lower():
                 return choice
-        raise BadUsage(f"{arg.name} must be one of: {', '.join(arg.choices)}")
+        raise BadUsageError(f"{arg.name} must be one of: {', '.join(arg.choices)}")
     return token  # field/section/pocket/word/month/cap — interpreted by the handler

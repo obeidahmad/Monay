@@ -56,8 +56,16 @@ def test_pockets_tab():
 
 def test_history_tab():
     summaries = [
-        MonthSummary(MonthKey(2025, 2), MonthState.OPEN, Money("2000"), Money("0"), Money("0")),
-        MonthSummary(MonthKey(2025, 1), MonthState.CLOSED, Money("2000"), Money("750"), Money("650")),
+        MonthSummary(
+            MonthKey(2025, 2), MonthState.OPEN, Money("2000"), Money("0"), Money("0")
+        ),
+        MonthSummary(
+            MonthKey(2025, 1),
+            MonthState.CLOSED,
+            Money("2000"),
+            Money("750"),
+            Money("650"),
+        ),
     ]
     text = render_text(render_history(summaries, MonthKey(2025, 2)))
     assert "2025-02" in text and "2025-01" in text

@@ -11,14 +11,14 @@ from monay.data.db import make_engine, run_migrations
 from monay.data.unit_of_work import SqlAlchemyUnitOfWork
 from monay.domain.closing import MonthCloser
 from monay.domain.entities import Profile
-from monay.domain.errors import MonthClosed
+from monay.domain.errors import MonthClosedError
 from monay.domain.money import Money
 from monay.domain.ports import MonthRepository, ProfileRepository, UnitOfWork
 from monay.domain.values import Cap, MonthKey
 from tests.fixtures.sample_budget import build_sample
 
 
-def M(v: str) -> Money:
+def money(v: str) -> Money:
     return Money(v)
 
 
@@ -61,18 +61,23 @@ def test_roundtrip_recompute_matches(engine):
     assert len(loaded.transactions) == 4
 
     # recompute reproduces the values from stored inputs
-    assert loaded.total_income == M("2000")
-    assert loaded.field("Needs", "Groceries").left == M("350")
-    assert loaded.field("Savings", "Investments").left == M("640")
-    assert loaded.section("Needs").rest == M("350")
-    assert loaded.section("Savings").rest == M("60")
-    assert loaded.pocket("Broker").counter == loaded.field("Savings", "Investments").left
+    assert loaded.total_income == money("2000")
+    assert loaded.field("Needs", "Groceries").left == money("350")
+    assert loaded.field("Savings", "Investments").left == money("640")
+    assert loaded.section("Needs").rest == money("350")
+    assert loaded.section("Savings").rest == money("60")
+    assert (
+        loaded.pocket("Broker").counter == loaded.field("Savings", "Investments").left
+    )
 
     # value objects survived
     assert loaded.field("Needs", "Groceries").cap == Cap.finite("400")
     assert loaded.field("Savings", "Investments").cap == Cap.infinite()
-    assert loaded.section("Bills").rest_routing == build_sample().section("Bills").rest_routing
-    assert loaded.field("Needs", "Dining").current == M("0")
+    assert (
+        loaded.section("Bills").rest_routing
+        == build_sample().section("Bills").rest_routing
+    )
+    assert loaded.field("Needs", "Dining").current == money("0")
 
     # transactions rewired to their field objects (first tx is Bills/Utilities)
     assert loaded.transactions[0].field is loaded.field("Bills", "Utilities")
@@ -119,7 +124,7 @@ def test_closed_month_save_rejected(engine):
     with SqlAlchemyUnitOfWork(engine) as uow:
         closed = uow.months.get(pid, MonthKey(2025, 1))
         assert closed.is_closed
-        with pytest.raises(MonthClosed):
+        with pytest.raises(MonthClosedError):
             uow.months.save(closed)
         assert uow.months.keys(pid) == [MonthKey(2025, 1), MonthKey(2025, 2)]
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 from sqlalchemy import select, update
 
 from monay.domain.entities import Profile
-from monay.domain.errors import MonthClosed
+from monay.domain.errors import MonthClosedError
 from monay.domain.month import Month, MonthState
 from monay.domain.values import MonthKey
 
@@ -36,8 +36,9 @@ class SqlAlchemyMonthRepository:
             select(months.c.state).where(months.c.id == month.id)
         ).scalar_one_or_none()
         if stored_state == MonthState.CLOSED.value:
-            raise MonthClosed(
-                f"month {month.key} is closed in storage; corrections go in the open month"
+            raise MonthClosedError(
+                f"month {month.key} is closed in storage; "
+                "corrections go in the open month"
             )
         update_month(self._conn, month)
 

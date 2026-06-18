@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import ast
 import operator
+from collections.abc import Callable
 from decimal import Decimal, DivisionByZero, InvalidOperation
-from typing import Callable
 
 from .errors import ExpressionError
 from .money import Money
@@ -37,9 +37,7 @@ def evaluate(expr: str) -> Money:
     and on division by zero.
     """
     if not isinstance(expr, str):
-        raise ExpressionError(
-            f"expression must be a string, got {type(expr).__name__}"
-        )
+        raise ExpressionError(f"expression must be a string, got {type(expr).__name__}")
     text = expr.strip()
     if not text:
         raise ExpressionError("empty expression")

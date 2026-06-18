@@ -74,7 +74,9 @@ def test_monthkey_ordering():
     assert MonthKey(2027, 1) > MonthKey(2026, 12)
 
 
-@pytest.mark.parametrize("bad", ["2026-13", "2026-00", "2026-7", "26-06", "bad", "2026/07"])
+@pytest.mark.parametrize(
+    "bad", ["2026-13", "2026-00", "2026-7", "26-06", "bad", "2026/07"]
+)
 def test_monthkey_invalid(bad):
     with pytest.raises(ValidationError):
         MonthKey.from_string(bad)

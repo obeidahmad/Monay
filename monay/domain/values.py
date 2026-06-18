@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from enum import Enum
+from enum import StrEnum
 
 from .errors import ValidationError
 from .money import Money, money
@@ -29,14 +29,14 @@ class Cap:
     limit: Money | None  # None == infinite
 
     @classmethod
-    def finite(cls, value: object) -> "Cap":
+    def finite(cls, value: object) -> Cap:
         amount = money(value)
         if amount.is_negative:
             raise ValidationError(f"cap cannot be negative: {amount!r}")
         return cls(amount)
 
     @classmethod
-    def infinite(cls) -> "Cap":
+    def infinite(cls) -> Cap:
         return cls(None)
 
     @property
@@ -114,22 +114,22 @@ class MonthKey:
             raise ValidationError(f"month out of range 1–12: {self.month}")
 
     @classmethod
-    def from_string(cls, text: str) -> "MonthKey":
+    def from_string(cls, text: str) -> MonthKey:
         m = _MONTHKEY_RE.match(text.strip()) if isinstance(text, str) else None
         if not m:
             raise ValidationError(f"month key must look like yyyy-mm: {text!r}")
         return cls(int(m.group(1)), int(m.group(2)))
 
     @classmethod
-    def from_date(cls, d) -> "MonthKey":
+    def from_date(cls, d) -> MonthKey:
         return cls(d.year, d.month)
 
-    def next(self) -> "MonthKey":
+    def next(self) -> MonthKey:
         if self.month == 12:
             return MonthKey(self.year + 1, 1)
         return MonthKey(self.year, self.month + 1)
 
-    def previous(self) -> "MonthKey":
+    def previous(self) -> MonthKey:
         if self.month == 1:
             return MonthKey(self.year - 1, 12)
         return MonthKey(self.year, self.month - 1)
@@ -159,7 +159,7 @@ class Day:
 
 
 # --- RestRouting ----------------------------------------------------------
-class RoutingKind(str, Enum):
+class RoutingKind(StrEnum):
     INCOME = "income"
     SELF = "self"
     SECTION = "section"
@@ -190,15 +190,15 @@ class RestRouting:
             raise ValidationError(f"{self.kind.value} routing takes no target")
 
     @classmethod
-    def to_income(cls) -> "RestRouting":
+    def to_income(cls) -> RestRouting:
         return cls(RoutingKind.INCOME)
 
     @classmethod
-    def to_self(cls) -> "RestRouting":
+    def to_self(cls) -> RestRouting:
         return cls(RoutingKind.SELF)
 
     @classmethod
-    def to_section(cls, name: str) -> "RestRouting":
+    def to_section(cls, name: str) -> RestRouting:
         return cls(RoutingKind.SECTION, name)
 
     @property

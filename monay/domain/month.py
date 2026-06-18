@@ -10,7 +10,7 @@ when empty, post-% sums to 100 to operate) and leaves the month recomputed.
 from __future__ import annotations
 
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 from .entities import (
     AllocKind,
@@ -24,22 +24,22 @@ from .entities import (
     Transfer,
 )
 from .errors import (
-    Ambiguous,
-    CapExceeded,
-    DuplicateName,
-    FieldNotEmpty,
-    MonthClosed,
-    MonthNotBalanced,
-    NotFound,
-    PocketInUse,
-    SectionNotEmpty,
+    AmbiguousError,
+    CapExceededError,
+    DuplicateNameError,
+    FieldNotEmptyError,
+    MonthClosedError,
+    MonthNotBalancedError,
+    NotFoundError,
+    PocketInUseError,
+    SectionNotEmptyError,
     ValidationError,
 )
 from .money import Money, money
 from .values import Cap, Day, MonthKey, Percentage, RestRouting
 
 
-class MonthState(str, Enum):
+class MonthState(StrEnum):
     OPEN = "open"
     CLOSED = "closed"
 
@@ -105,7 +105,11 @@ class Month:
 
         remaining = self.total_income
         for s in pre:
-            share = s.amount if s.alloc_kind is AllocKind.AMOUNT else s.percentage.of(remaining)
+            share = (
+                s.amount
+                if s.alloc_kind is AllocKind.AMOUNT
+                else s.percentage.of(remaining)
+            )
             s.available = share + s.carried_rest
             remaining = remaining - share
 
@@ -165,34 +169,38 @@ class Month:
         for s in self.sections:
             if s.name == name:
                 return s
-        raise NotFound(f"no section named {name!r}")
+        raise NotFoundError(f"no section named {name!r}")
 
     def field(self, section_name: str, field_name: str) -> Field:
         for f in self.section(section_name).fields:
             if f.name == field_name:
                 return f
-        raise NotFound(f"no field {field_name!r} in section {section_name!r}")
+        raise NotFoundError(f"no field {field_name!r} in section {section_name!r}")
 
     def locate_field(self, name: str) -> tuple[str, Field]:
         """Resolve a bare field name to ``(section_name, field)``.
 
         Field names are unique within a section but can repeat across sections;
-        commands address fields by bare name, so this raises ``Ambiguous`` when
+        commands address fields by bare name, so this raises ``AmbiguousError`` when
         the name matches more than one (docs/DEVELOPING.md).
         """
-        matches = [(s.name, f) for s in self.sections for f in s.fields if f.name == name]
+        matches = [
+            (s.name, f) for s in self.sections for f in s.fields if f.name == name
+        ]
         if not matches:
-            raise NotFound(f"no field named {name!r}")
+            raise NotFoundError(f"no field named {name!r}")
         if len(matches) > 1:
             where = ", ".join(sn for sn, _ in matches)
-            raise Ambiguous(f"field {name!r} exists in several sections ({where}); be specific")
+            raise AmbiguousError(
+                f"field {name!r} exists in several sections ({where}); be specific"
+            )
         return matches[0]
 
     def pocket(self, name: str) -> Pocket:
         for p in self.pockets:
             if p.name == name:
                 return p
-        raise NotFound(f"no pocket named {name!r}")
+        raise NotFoundError(f"no pocket named {name!r}")
 
     # =====================================================================
     # Transactions
@@ -219,7 +227,9 @@ class Month:
         self.recompute()
         return tx
 
-    def edit_transaction(self, tx: Transaction, *, day=None, amount=None, description=None) -> None:
+    def edit_transaction(
+        self, tx: Transaction, *, day=None, amount=None, description=None
+    ) -> None:
         self._require_open()
         if amount is not None:
             tx.amount = self._positive(amount, "transaction amount")
@@ -257,12 +267,14 @@ class Month:
         if not dst.cap.is_infinite:
             room = dst.cap.limit - dst.left
             if amount > room:
-                raise CapExceeded(
-                    f"transfer would push {to_field!r} above its MAX of {dst.cap.limit}; "
-                    f"the largest that fits is {room}",
+                raise CapExceededError(
+                    f"transfer would push {to_field!r} above its MAX "
+                    f"of {dst.cap.limit}; the largest that fits is {room}",
                     allowed=room,
                 )
-        t = Transfer(from_field=src, to_field=dst, day=self._day(day), amount=amount, note=note)
+        t = Transfer(
+            from_field=src, to_field=dst, day=self._day(day), amount=amount, note=note
+        )
         self.transfers.append(t)
         self.recompute()
         return t
@@ -287,7 +299,9 @@ class Month:
         self._require_open()
         s = self.section(section_name)
         if any(f.name == name for f in s.fields):
-            raise DuplicateName(f"section {section_name!r} already has a field {name!r}")
+            raise DuplicateNameError(
+                f"section {section_name!r} already has a field {name!r}"
+            )
         if not isinstance(cap, Cap):
             raise ValidationError("cap must be a Cap")
         f = Field(
@@ -307,13 +321,18 @@ class Month:
         self.recompute()
         f = self.field(section_name, name)
         if not f.left.is_zero:
-            raise FieldNotEmpty(
-                f"field {name!r} still holds {f.left} — transfer its pot away (LEFT must be 0) first"
+            raise FieldNotEmptyError(
+                f"field {name!r} still holds {f.left} — "
+                "transfer its pot away (LEFT must be 0) first"
             )
         if any(tx.field is f for tx in self.transactions):
-            raise FieldNotEmpty(f"field {name!r} has transactions this month; delete them first")
+            raise FieldNotEmptyError(
+                f"field {name!r} has transactions this month; delete them first"
+            )
         if any(t.from_field is f or t.to_field is f for t in self.transfers):
-            raise FieldNotEmpty(f"field {name!r} is referenced by a transfer; remove it first")
+            raise FieldNotEmptyError(
+                f"field {name!r} is referenced by a transfer; remove it first"
+            )
         self.section(section_name).fields.remove(f)
         self.recompute()
 
@@ -346,7 +365,9 @@ class Month:
         self._require_open()
         s = self.section(section_name)
         if new_name != name and any(f.name == new_name for f in s.fields):
-            raise DuplicateName(f"section {section_name!r} already has a field {new_name!r}")
+            raise DuplicateNameError(
+                f"section {section_name!r} already has a field {new_name!r}"
+            )
         self.field(section_name, name).name = new_name
         self.recompute()
 
@@ -365,14 +386,16 @@ class Month:
     ) -> Section:
         self._require_open()
         if any(s.name == name for s in self.sections):
-            raise DuplicateName(f"a section named {name!r} already exists")
+            raise DuplicateNameError(f"a section named {name!r} already exists")
         kind = SectionKind(kind)
         s = Section(
             name=name,
             kind=kind,
             alloc_kind=AllocKind.AMOUNT if amount is not None else AllocKind.PCT,
             position=self._next_section_position() if position is None else position,
-            percentage=self._as_percentage(percentage) if percentage is not None else None,
+            percentage=self._as_percentage(percentage)
+            if percentage is not None
+            else None,
             amount=money(amount) if amount is not None else None,
             rest_routing=rest_routing or RestRouting.to_income(),
         )
@@ -384,7 +407,9 @@ class Month:
         self._require_open()
         s = self.section(name)
         if s.fields:
-            raise SectionNotEmpty(f"section {name!r} still has fields; delete them first")
+            raise SectionNotEmptyError(
+                f"section {name!r} still has fields; delete them first"
+            )
         self.sections.remove(s)
         self.recompute()
 
@@ -402,7 +427,7 @@ class Month:
         s = self.section(name)
         if new_name is not None and new_name != name:
             if any(o.name == new_name for o in self.sections):
-                raise DuplicateName(f"a section named {new_name!r} already exists")
+                raise DuplicateNameError(f"a section named {new_name!r} already exists")
             s.name = new_name
         if percentage is not None:
             s.percentage = self._as_percentage(percentage)
@@ -410,7 +435,9 @@ class Month:
             s.amount = None
         if amount is not None:
             if s.kind is SectionKind.POST:
-                raise ValidationError("post-sections allocate by percentage, not a fixed amount")
+                raise ValidationError(
+                    "post-sections allocate by percentage, not a fixed amount"
+                )
             s.amount = money(amount)
             s.alloc_kind = AllocKind.AMOUNT
             s.percentage = None
@@ -423,9 +450,16 @@ class Month:
     # =====================================================================
     # Income
     # =====================================================================
-    def add_income(self, name: str, amount, kind: IncomeKind = IncomeKind.MANUAL) -> Income:
+    def add_income(
+        self, name: str, amount, kind: IncomeKind = IncomeKind.MANUAL
+    ) -> Income:
         self._require_open()
-        inc = Income(name=name, amount=money(amount), kind=IncomeKind(kind), position=len(self.incomes))
+        inc = Income(
+            name=name,
+            amount=money(amount),
+            kind=IncomeKind(kind),
+            position=len(self.incomes),
+        )
         self.incomes.append(inc)
         self.recompute()
         return inc
@@ -449,7 +483,7 @@ class Month:
     def add_pocket(self, name: str, is_default: bool = False) -> Pocket:
         self._require_open()
         if any(p.name == name for p in self.pockets):
-            raise DuplicateName(f"a pocket named {name!r} already exists")
+            raise DuplicateNameError(f"a pocket named {name!r} already exists")
         p = Pocket(name=name, is_default=False, position=len(self.pockets))
         self.pockets.append(p)
         if is_default:
@@ -471,14 +505,16 @@ class Month:
         if p.is_default:
             raise ValidationError("cannot delete the default pocket")
         if any(f.pocket is p for f in self._all_fields()):
-            raise PocketInUse(f"pocket {name!r} still holds fields; reassign them first")
+            raise PocketInUseError(
+                f"pocket {name!r} still holds fields; reassign them first"
+            )
         self.pockets.remove(p)
         self.recompute()
 
     def rename_pocket(self, name: str, new_name: str) -> None:
         self._require_open()
         if new_name != name and any(p.name == new_name for p in self.pockets):
-            raise DuplicateName(f"a pocket named {new_name!r} already exists")
+            raise DuplicateNameError(f"a pocket named {new_name!r} already exists")
         self.pocket(name).name = new_name
         self.recompute()
 
@@ -489,11 +525,13 @@ class Month:
         """Raise unless the month can be operated/closed (post-% sums to 100)."""
         total = self._post_percentage_total()
         if total is not None and total != Decimal(100):
-            raise MonthNotBalanced(f"post-section percentages sum to {total}, not 100")
+            raise MonthNotBalancedError(
+                f"post-section percentages sum to {total}, not 100"
+            )
 
     def _require_open(self) -> None:
         if self.is_closed:
-            raise MonthClosed(
+            raise MonthClosedError(
                 f"month {self.key} is closed; make corrections in the open month"
             )
 

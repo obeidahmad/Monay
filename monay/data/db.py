@@ -12,7 +12,7 @@ from sqlalchemy import delete, event, select
 from sqlalchemy.pool import StaticPool
 
 from . import migrations as _migrations
-from .schema import metadata, schema_version
+from .schema import schema_version
 
 _IN_MEMORY = {"sqlite://", "sqlite:///:memory:"}
 

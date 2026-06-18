@@ -26,45 +26,45 @@ class ExpressionError(ValidationError):
 
 
 # --- aggregate / mutation errors (Phase 3) --------------------------------
-class MonthClosed(MonayError):
+class MonthClosedError(MonayError):
     """A write was attempted on a closed month (corrections go in the open one)."""
 
 
-class NotFound(MonayError):
+class NotFoundError(MonayError):
     """A referenced section / field / pocket / income does not exist."""
 
 
-class Ambiguous(MonayError):
+class AmbiguousError(MonayError):
     """A bare field name matches fields in more than one section."""
 
 
-class DuplicateName(MonayError):
+class DuplicateNameError(MonayError):
     """A name collides with an existing one (sections, fields-in-section, pockets)."""
 
 
-class FieldNotEmpty(MonayError):
+class FieldNotEmptyError(MonayError):
     """A field cannot be deleted while it holds money (LEFT ≠ 0) or has activity."""
 
 
-class SectionNotEmpty(MonayError):
+class SectionNotEmptyError(MonayError):
     """A section cannot be deleted while it still has fields."""
 
 
-class PocketInUse(MonayError):
+class PocketInUseError(MonayError):
     """A pocket cannot be deleted while fields still belong to it."""
 
 
-class MonthNotBalanced(MonayError):
+class MonthNotBalancedError(MonayError):
     """Post-section percentages do not sum to 100% (month can't be operated/closed)."""
 
 
-class CapExceeded(MonayError):
+class CapExceededError(MonayError):
     """A transfer would push the destination's LEFT above its MAX (a hard invariant).
 
     ``allowed`` carries the largest amount that would still fit, so the UI can
     tell the user (docs/DEVELOPING.md).
     """
 
-    def __init__(self, message: str, allowed: "Money | None" = None) -> None:
+    def __init__(self, message: str, allowed: Money | None = None) -> None:
         super().__init__(message)
         self.allowed = allowed

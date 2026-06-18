@@ -26,8 +26,8 @@ from monay.domain.entities import (
     SectionKind,
     Transaction,
 )
-from monay.domain.month import Month
 from monay.domain.money import Money
+from monay.domain.month import Month
 from monay.domain.values import Cap, Day, MonthKey, Percentage, RestRouting
 
 INF = Cap.infinite()
@@ -47,31 +47,59 @@ def build_sample() -> Month:
 
     month.incomes = [Income("Salary", _m("2000"), IncomeKind.MANUAL, 0)]
 
-    bills = _section("Bills", SectionKind.PRE, 0, RestRouting.to_self(), amount=_m("500"))
-    _fields(bills, main, [
-        ("Utilities", "500", "0", INF),
-    ])
+    bills = _section(
+        "Bills", SectionKind.PRE, 0, RestRouting.to_self(), amount=_m("500")
+    )
+    _fields(
+        bills,
+        main,
+        [
+            ("Utilities", "500", "0", INF),
+        ],
+    )
 
-    needs = _section("Needs", SectionKind.POST, 1, RestRouting.to_income(), percentage=Percentage(50))
-    _fields(needs, main, [
-        ("Groceries", "300", "100", Cap.finite("400")),
-        ("Transport", "50", "50", Cap.finite("50")),
-        ("Dining", "100", "0", INF),
-    ])
+    needs = _section(
+        "Needs", SectionKind.POST, 1, RestRouting.to_income(), percentage=Percentage(50)
+    )
+    _fields(
+        needs,
+        main,
+        [
+            ("Groceries", "300", "100", Cap.finite("400")),
+            ("Transport", "50", "50", Cap.finite("50")),
+            ("Dining", "100", "0", INF),
+        ],
+    )
 
-    wants = _section("Wants", SectionKind.POST, 2, RestRouting.to_income(), percentage=Percentage(30))
-    _fields(wants, main, [
-        ("Clothes", "150", "0", INF),
-        ("Gadgets", "0", "200", INF),
-    ])
+    wants = _section(
+        "Wants", SectionKind.POST, 2, RestRouting.to_income(), percentage=Percentage(30)
+    )
+    _fields(
+        wants,
+        main,
+        [
+            ("Clothes", "150", "0", INF),
+            ("Gadgets", "0", "200", INF),
+        ],
+    )
 
-    savings = _section("Savings", SectionKind.POST, 3, RestRouting.to_self(), percentage=Percentage(20))
-    _fields(savings, bank, [
-        ("Emergency", "100", "1000", Cap.finite("5000")),
-    ])
-    _fields(savings, broker, [
-        ("Investments", "140", "500", INF),
-    ])
+    savings = _section(
+        "Savings", SectionKind.POST, 3, RestRouting.to_self(), percentage=Percentage(20)
+    )
+    _fields(
+        savings,
+        bank,
+        [
+            ("Emergency", "100", "1000", Cap.finite("5000")),
+        ],
+    )
+    _fields(
+        savings,
+        broker,
+        [
+            ("Investments", "140", "500", INF),
+        ],
+    )
 
     month.sections = [bills, needs, wants, savings]
     month.transactions = _transactions(month)

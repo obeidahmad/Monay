@@ -8,26 +8,27 @@ the data it owns.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from .errors import ValidationError
 from .money import Money
 from .values import Cap, Day, Percentage, RestRouting
 
 
-class SectionKind(str, Enum):
+class SectionKind(StrEnum):
     PRE = "pre"
     POST = "post"
 
 
-class AllocKind(str, Enum):
+class AllocKind(StrEnum):
     PCT = "pct"
     AMOUNT = "amount"
 
 
-class IncomeKind(str, Enum):
+class IncomeKind(StrEnum):
     MANUAL = "manual"
     LEFTOVER = "leftover"
 
@@ -108,9 +109,13 @@ class Section:
 
     def __post_init__(self) -> None:
         if self.alloc_kind is AllocKind.PCT and self.percentage is None:
-            raise ValidationError(f"section {self.name!r} allocates by %, needs a percentage")
+            raise ValidationError(
+                f"section {self.name!r} allocates by %, needs a percentage"
+            )
         if self.alloc_kind is AllocKind.AMOUNT and self.amount is None:
-            raise ValidationError(f"section {self.name!r} allocates a fixed amount, needs one")
+            raise ValidationError(
+                f"section {self.name!r} allocates a fixed amount, needs one"
+            )
         if self.kind is SectionKind.POST and self.alloc_kind is not AllocKind.PCT:
             raise ValidationError("post-budgeting sections must allocate by percentage")
 

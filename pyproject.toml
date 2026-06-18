@@ -24,6 +24,7 @@ build = [
 dev = [
     "pytest>=9",
     "openpyxl>=3.1", # only for the throwaway legacy_excel/ inspection scripts; app never imports Excel
+    "ruff>=0.9",
 ]
 
 # Not a distributable package (yet): uv just manages the environment.
@@ -48,3 +49,20 @@ packages = ["monay"]
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-ra"
+
+# Ruff is the one linter + formatter (replaces Black/Flake8/isort).
+[tool.ruff]
+target-version = "py314"
+line-length = 88
+extend-exclude = ["legacy_excel", "monay/_version.py"]
+
+[tool.ruff.lint]
+# A pragmatic, not-maximalist set: pyflakes (F) + pycodestyle (E/W) for
+# correctness, plus the high-signal opinionated rules — imports (I), 
+# bugbears (B), comprehensions (C4), pyupgrade (UP), naming (N), and
+# simplifications (SIM).
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests favor readability over import hygiene; allow unused fixtures/imports.
+"tests/**" = ["F401", "F811"]

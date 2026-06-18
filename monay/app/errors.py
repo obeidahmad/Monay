@@ -7,13 +7,13 @@ class AppError(Exception):
     """Base for application/command errors."""
 
 
-class UnknownCommand(AppError):
+class UnknownCommandError(AppError):
     """The first token doesn't match any command."""
 
 
-class BadUsage(AppError):
+class BadUsageError(AppError):
     """A command was recognized but its arguments are wrong."""
 
 
-class NoProfile(AppError):
+class NoProfileError(AppError):
     """An operation needs a selected profile but none is active."""

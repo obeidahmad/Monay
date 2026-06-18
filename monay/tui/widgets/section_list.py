@@ -50,10 +50,16 @@ def _kind_label(s) -> str:
 
 
 def _summary(month, sections) -> Text:
-    pre_total = sum((s.available for s in sections if s.kind is SectionKind.PRE), Money.zero())
+    pre_total = sum(
+        (s.available for s in sections if s.kind is SectionKind.PRE), Money.zero()
+    )
     post_pool = month.total_income - pre_total
     pct_total = sum(
-        (s.percentage.value for s in sections if s.kind is SectionKind.POST and s.percentage),
+        (
+            s.percentage.value
+            for s in sections
+            if s.kind is SectionKind.POST and s.percentage
+        ),
         Decimal(0),
     )
     has_post = any(s.kind is SectionKind.POST for s in sections)
