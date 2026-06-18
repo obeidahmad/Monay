@@ -8,8 +8,8 @@ execution (docs/DEVELOPING.md).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dc_field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from monay.app.errors import AppError
 from monay.domain.errors import MonayError
@@ -67,19 +67,19 @@ class Result:
     pending: str | None = None
 
     @classmethod
-    def ok(cls, message: str, month=None) -> "Result":
+    def ok(cls, message: str, month=None) -> Result:
         return cls("ok", message, month=month)
 
     @classmethod
-    def error(cls, message: str) -> "Result":
+    def error(cls, message: str) -> Result:
         return cls("error", message)
 
     @classmethod
-    def info(cls, message: str, data=None) -> "Result":
+    def info(cls, message: str, data=None) -> Result:
         return cls("info", message, data=data)
 
     @classmethod
-    def confirm(cls, prompt: str, pending: str) -> "Result":
+    def confirm(cls, prompt: str, pending: str) -> Result:
         return cls("confirm", prompt, pending=pending)
 
 
@@ -107,7 +107,11 @@ class CommandRegistry:
 
         if spec.confirm and not confirmed:
             try:
-                prompt = spec.summary(app, args) if spec.summary else f"{spec.name}: are you sure?"
+                prompt = (
+                    spec.summary(app, args)
+                    if spec.summary
+                    else f"{spec.name}: are you sure?"
+                )
             except (AppError, MonayError) as exc:
                 return Result.error(str(exc))
             return Result.confirm(f"{prompt} Type Yes or No:", pending=text)

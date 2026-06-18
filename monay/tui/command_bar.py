@@ -38,5 +38,7 @@ class CommandBar(Input):
         if not self._history:
             return
         self._index = max(0, min(len(self._history), self._index + step))
-        self.value = self._history[self._index] if self._index < len(self._history) else ""
+        self.value = (
+            self._history[self._index] if self._index < len(self._history) else ""
+        )
         self.cursor_position = len(self.value)

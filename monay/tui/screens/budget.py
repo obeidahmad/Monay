@@ -9,11 +9,13 @@ from __future__ import annotations
 from rich.console import RenderableType
 from rich.text import Text
 
-from monay.domain.errors import NotFound
+from monay.domain.errors import NotFoundError
 from monay.tui.widgets import section_detail, section_list
 
 
-def render_budget(month, drilled_section: str | None, currency: str = "€") -> RenderableType:
+def render_budget(
+    month, drilled_section: str | None, currency: str = "€"
+) -> RenderableType:
     if month is None:
         return Text("No month yet.", style="dim")
     if not month.sections:
@@ -23,6 +25,6 @@ def render_budget(month, drilled_section: str | None, currency: str = "€") -> 
     if drilled_section:
         try:
             return section_detail.build(month, drilled_section, currency)
-        except NotFound:
+        except NotFoundError:
             pass  # section gone (e.g. deleted) — fall back to the list
     return section_list.build(month, currency)

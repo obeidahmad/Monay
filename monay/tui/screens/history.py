@@ -34,5 +34,8 @@ def render_history(summaries, viewing) -> RenderableType:
             money_str(s.leftovers),
         )
 
-    hint = Text("month <yyyy-mm> opens a month read-only · month returns to the open one", style="dim")
+    hint = Text(
+        "month <yyyy-mm> opens a month read-only · month returns to the open one",
+        style="dim",
+    )
     return Group(table, hint)

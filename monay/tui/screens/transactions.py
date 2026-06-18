@@ -16,7 +16,9 @@ from monay.tui import theme
 from monay.tui.format import money_str
 
 
-def render_transactions(month, tx_filter: str | None, currency: str = "€") -> RenderableType:
+def render_transactions(
+    month, tx_filter: str | None, currency: str = "€"
+) -> RenderableType:
     if not month.transactions and not month.transfers:
         return Text("No transactions yet — add <field> <amount>", style="dim")
 

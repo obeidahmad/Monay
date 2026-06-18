@@ -10,7 +10,7 @@ no float ever touches a value (floats are rejected outright).
 from __future__ import annotations
 
 import functools
-from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
+from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
 from typing import Final
 
 from .errors import ValidationError
@@ -51,7 +51,7 @@ class Money:
 
     __slots__ = ("_amount",)
 
-    def __init__(self, value: "Numeric | Money" = 0) -> None:
+    def __init__(self, value: Numeric | Money = 0) -> None:
         object.__setattr__(
             self, "_amount", _coerce(value).quantize(FOUR_PLACES, rounding=ROUNDING)
         )
@@ -65,7 +65,7 @@ class Money:
 
     # --- constructors -----------------------------------------------------
     @classmethod
-    def zero(cls) -> "Money":
+    def zero(cls) -> Money:
         return cls(0)
 
     # --- views ------------------------------------------------------------
@@ -91,28 +91,28 @@ class Money:
         return self._amount > 0
 
     # --- arithmetic -------------------------------------------------------
-    def __add__(self, other: object) -> "Money":
+    def __add__(self, other: object) -> Money:
         if isinstance(other, Money):
             return Money(self._amount + other._amount)
         return NotImplemented
 
-    def __radd__(self, other: object) -> "Money":
+    def __radd__(self, other: object) -> Money:
         if other == 0:  # enables sum() with its default int start of 0
             return self
         return NotImplemented
 
-    def __sub__(self, other: object) -> "Money":
+    def __sub__(self, other: object) -> Money:
         if isinstance(other, Money):
             return Money(self._amount - other._amount)
         return NotImplemented
 
-    def __neg__(self) -> "Money":
+    def __neg__(self) -> Money:
         return Money(-self._amount)
 
-    def __abs__(self) -> "Money":
+    def __abs__(self) -> Money:
         return Money(abs(self._amount))
 
-    def __mul__(self, factor: object) -> "Money":
+    def __mul__(self, factor: object) -> Money:
         # Scale by a unit-less scalar (e.g. a Percentage fraction).
         if isinstance(factor, bool):
             return NotImplemented
@@ -122,7 +122,7 @@ class Money:
 
     __rmul__ = __mul__
 
-    def __truediv__(self, divisor: object) -> "Money":
+    def __truediv__(self, divisor: object) -> Money:
         if isinstance(divisor, bool):
             return NotImplemented
         if isinstance(divisor, (int, Decimal)):
@@ -144,10 +144,10 @@ class Money:
         return hash(self._amount)
 
     # --- copy / pickle (immutable, so a "copy" is just self) --------------
-    def __copy__(self) -> "Money":
+    def __copy__(self) -> Money:
         return self
 
-    def __deepcopy__(self, memo: dict) -> "Money":
+    def __deepcopy__(self, memo: dict) -> Money:
         return self
 
     def __reduce__(self):
@@ -161,6 +161,6 @@ class Money:
         return str(self.display())
 
 
-def money(value: "Numeric | Money" = 0) -> Money:
+def money(value: Numeric | Money = 0) -> Money:
     """Ergonomic constructor; an existing Money passes through unchanged."""
     return value if isinstance(value, Money) else Money(value)

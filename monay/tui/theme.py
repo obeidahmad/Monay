@@ -34,12 +34,12 @@ SECTION_PALETTE = (
 
 # Fixed per-column colors (Budget tab).
 COLUMN_COLORS = {
-    "budget": "#56b6c2",   # cyan
-    "current": TEXT,       # dim white
-    "paid": "#d19a66",     # orange
-    "left": OK,            # green/red by sign (handled per-cell)
-    "max": "#7f848e",      # dim
-    "pocket": "#7f848e",   # grey
+    "budget": "#56b6c2",  # cyan
+    "current": TEXT,  # dim white
+    "paid": "#d19a66",  # orange
+    "left": OK,  # green/red by sign (handled per-cell)
+    "max": "#7f848e",  # dim
+    "pocket": "#7f848e",  # grey
 }
 
 

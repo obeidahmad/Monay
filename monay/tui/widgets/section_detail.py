@@ -22,7 +22,12 @@ def build(month, section_name: str, currency: str = "€") -> RenderableType:
     accent = _accent_for(month, s)
 
     header = Text(f"◂ {s.name.upper()} · {_kind_label(s)} · ", style=accent)
-    header.append(Text(f"avail {money_str(s.available)} · budget left {money_str(s.budget_left)} · rest "))
+    header.append(
+        Text(
+            f"avail {money_str(s.available)} · "
+            f"budget left {money_str(s.budget_left)} · rest "
+        )
+    )
     header.append(signed(s.rest))
 
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)

@@ -39,7 +39,10 @@ def _routing(token: str) -> RestRouting:
 def _field_line(month, field_name: str, verb: str) -> str:
     section, f = month.locate_field(field_name)
     rest = month.section(section).rest
-    return f"✓ {verb} {field_name}: LEFT {f.left.display()} ({section} REST {rest.display()})"
+    return (
+        f"✓ {verb} {field_name}: LEFT {f.left.display()} "
+        f"({section} REST {rest.display()})"
+    )
 
 
 # --- transactions / transfers --------------------------------------------
@@ -56,7 +59,9 @@ def h_transfer(app: MonayApp, a: dict) -> Result:
 def h_tx(app: MonayApp, a: dict) -> Result:
     flt = (a["filter"] or "").strip() or None
     app.set_tx_filter(flt)
-    return Result.info(f"transactions filtered by {flt!r}" if flt else "showing all transactions")
+    return Result.info(
+        f"transactions filtered by {flt!r}" if flt else "showing all transactions"
+    )
 
 
 def h_tx_edit(app: MonayApp, a: dict) -> Result:
@@ -130,7 +135,9 @@ def h_field_set(app: MonayApp, a: dict) -> Result:
         m = app.rename_field(name, value)
     else:  # current
         m = app.set_field_current(name, evaluate(value))
-    return Result.ok(_field_line(m, name if attr != "name" else value, f"{attr} set"), m)
+    return Result.ok(
+        _field_line(m, name if attr != "name" else value, f"{attr} set"), m
+    )
 
 
 def h_field_del(app: MonayApp, a: dict) -> Result:
@@ -141,7 +148,11 @@ def h_field_del(app: MonayApp, a: dict) -> Result:
 # --- income ---------------------------------------------------------------
 def h_income_add(app: MonayApp, a: dict) -> Result:
     m = app.add_income(a["name"], a["amount"])
-    return Result.ok(f"✓ income {a['name']} {a['amount'].display()} (total {m.total_income.display()})", m)
+    return Result.ok(
+        f"✓ income {a['name']} {a['amount'].display()} "
+        f"(total {m.total_income.display()})",
+        m,
+    )
 
 
 def h_income_set(app: MonayApp, a: dict) -> Result:

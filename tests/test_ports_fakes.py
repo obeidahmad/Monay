@@ -50,7 +50,10 @@ def test_fake_uow_roundtrips_a_month():
     assert loaded is not month  # came back as a fresh object graph
     loaded.recompute()
     assert loaded.total_income == month.total_income
-    assert loaded.field("Needs", "Groceries").left == month.field("Needs", "Groceries").left
+    assert (
+        loaded.field("Needs", "Groceries").left
+        == month.field("Needs", "Groceries").left
+    )
     assert loaded.section("Needs").rest == month.section("Needs").rest
     # the reconstructed graph keeps its internal wiring (tx -> field)
     assert loaded.transactions[0].field is loaded.field("Bills", "Utilities")
@@ -77,10 +80,9 @@ def test_fake_profile_repo():
 
 def test_uow_rolls_back_on_exception():
     uow = FakeUnitOfWork()
-    with pytest.raises(RuntimeError):
-        with uow:
-            uow.profiles.add(Profile(name="X"))
-            raise RuntimeError("boom")
+    with pytest.raises(RuntimeError), uow:
+        uow.profiles.add(Profile(name="X"))
+        raise RuntimeError("boom")
     assert uow.rolled_back
     assert not uow.committed
 

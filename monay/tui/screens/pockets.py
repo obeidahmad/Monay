@@ -33,7 +33,9 @@ def render_pockets(month, currency: str = "€") -> RenderableType:
             head.append("   ← incl. live RESTs", style="dim")
         blocks.append(head)
 
-        bits = [f"{f.name} {money_str(f.left)}" for f in fields_by_pocket.get(p.name, [])]
+        bits = [
+            f"{f.name} {money_str(f.left)}" for f in fields_by_pocket.get(p.name, [])
+        ]
         if p.is_default and not rests.is_zero:
             bits.append(f"RESTs {money_str(rests)}")
         if bits:

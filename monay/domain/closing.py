@@ -13,7 +13,7 @@ from __future__ import annotations
 import calendar
 
 from .entities import Field, Income, IncomeKind, Pocket, Section
-from .errors import MonthClosed
+from .errors import MonthClosedError
 from .money import Money
 from .month import Month, MonthState
 from .values import RoutingKind
@@ -23,17 +23,21 @@ class MonthCloser:
     def close(self, month: Month) -> Month:
         """Close ``month`` (locking it) and return the new open month."""
         if month.is_closed:
-            raise MonthClosed(f"month {month.key} is already closed")
-        month.assert_operable()  # post-% must sum to 100 (invariant: post-% must sum to 100)
+            raise MonthClosedError(f"month {month.key} is already closed")
+        month.assert_operable()  # invariant: post-% must sum to 100
         month.recompute()
 
-        nxt = Month(profile_id=month.profile_id, key=month.key.next(), state=MonthState.OPEN)
+        nxt = Month(
+            profile_id=month.profile_id, key=month.key.next(), state=MonthState.OPEN
+        )
         pockets = self._copy_pockets(month, nxt)
         sections = self._copy_sections(month, nxt, pockets)
         leftovers = self._route_rests(month, sections)
         nxt.incomes.append(
             Income(
-                name=f"{calendar.month_name[month.key.month]} {month.key.year} Leftovers",
+                name=(
+                    f"{calendar.month_name[month.key.month]} {month.key.year} Leftovers"
+                ),
                 amount=leftovers,
                 kind=IncomeKind.LEFTOVER,
                 position=0,

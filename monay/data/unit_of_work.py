@@ -21,7 +21,7 @@ class SqlAlchemyUnitOfWork:
         self._conn: sa.Connection | None = None
         self._tx = None
 
-    def __enter__(self) -> "SqlAlchemyUnitOfWork":
+    def __enter__(self) -> SqlAlchemyUnitOfWork:
         self._conn = self._engine.connect()
         self._tx = self._conn.begin()
         self.months = SqlAlchemyMonthRepository(self._conn)

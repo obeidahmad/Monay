@@ -10,15 +10,15 @@ TUI (``tui/``) both drive this object.
 from __future__ import annotations
 
 import calendar
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
-from monay.app.errors import BadUsage, NoProfile
+from monay.app.errors import BadUsageError, NoProfileError
 from monay.domain.closing import MonthCloser
 from monay.domain.entities import Profile
-from monay.domain.errors import DuplicateName, NotFound
-from monay.domain.month import Month, MonthState
+from monay.domain.errors import DuplicateNameError, NotFoundError
 from monay.domain.money import Money
+from monay.domain.month import Month, MonthState
 from monay.domain.ports import Clock, UnitOfWork
 from monay.domain.values import MonthKey
 
@@ -59,8 +59,10 @@ class MonayApp:
         first = first_month or MonthKey.from_date(self._clock.today())
         with self._uow_factory() as uow:
             if uow.profiles.by_name(name) is not None:
-                raise DuplicateName(f"a profile named {name!r} already exists")
-            profile = uow.profiles.add(Profile(name=name, created_at=self._clock.today()))
+                raise DuplicateNameError(f"a profile named {name!r} already exists")
+            profile = uow.profiles.add(
+                Profile(name=name, created_at=self._clock.today())
+            )
             month = Month(profile_id=profile.id, key=first, state=MonthState.OPEN)
             month.add_pocket("Main", is_default=True)
             uow.months.add(month)
@@ -73,7 +75,7 @@ class MonayApp:
         with self._uow_factory() as uow:
             p = uow.profiles.by_name(name)
             if p is None:
-                raise NotFound(f"no profile named {name!r}")
+                raise NotFoundError(f"no profile named {name!r}")
             keys = uow.months.keys(p.id)
         self._select(p)
         self.viewing, self.viewing_closed = (max(keys) if keys else None), False
@@ -83,7 +85,7 @@ class MonayApp:
         self._require_profile()
         with self._uow_factory() as uow:
             if uow.profiles.by_name(new_name) is not None:
-                raise DuplicateName(f"a profile named {new_name!r} already exists")
+                raise DuplicateNameError(f"a profile named {new_name!r} already exists")
             p = uow.profiles.get(self.profile_id)
             p.name = new_name
             uow.profiles.update(p)
@@ -103,7 +105,7 @@ class MonayApp:
         with self._uow_factory() as uow:
             p = uow.profiles.by_name(name)
             if p is None:
-                raise NotFound(f"no profile named {name!r}")
+                raise NotFoundError(f"no profile named {name!r}")
             uow.profiles.delete(p.id)
             uow.commit()
             remaining = uow.profiles.all()
@@ -150,7 +152,7 @@ class MonayApp:
         with self._uow_factory() as uow:
             m = uow.months.get(self._require_profile(), key)
             if m is None:
-                raise NotFound(f"no month {key} for this profile")
+                raise NotFoundError(f"no month {key} for this profile")
             closed = m.is_closed
         self.viewing, self.viewing_closed = key, closed
         return key, closed
@@ -171,9 +173,12 @@ class MonayApp:
         with self._uow_factory() as uow:
             for key in sorted(uow.months.keys(self._require_profile()), reverse=True):
                 m = uow.months.get(self.profile_id, key)
-                spent = sum((f.paid for s in m.sections for f in s.fields), Money.zero())
+                spent = sum(
+                    (f.paid for s in m.sections for f in s.fields), Money.zero()
+                )
                 leftovers = sum(
-                    (s.rest for s in m.sections if s.rest_routing.is_income), Money.zero()
+                    (s.rest for s in m.sections if s.rest_routing.is_income),
+                    Money.zero(),
                 )
                 out.append(MonthSummary(key, m.state, m.total_income, spent, leftovers))
         return out
@@ -181,24 +186,46 @@ class MonayApp:
     # =====================================================================
     # Transactions / transfers
     # =====================================================================
-    def add_transaction(self, field_name: str, amount: Money, day, description: str = "") -> Month:
+    def add_transaction(
+        self, field_name: str, amount: Money, day, description: str = ""
+    ) -> Month:
         def fn(m: Month) -> None:
             section, _ = m.locate_field(field_name)
-            m.add_transaction(section, field_name, self._resolve_day(m, day), amount, description=description)
+            m.add_transaction(
+                section,
+                field_name,
+                self._resolve_day(m, day),
+                amount,
+                description=description,
+            )
 
         return self._mutate(fn)
 
-    def transfer(self, amount: Money, from_field: str, to_field: str, day, note: str = "") -> Month:
+    def transfer(
+        self, amount: Money, from_field: str, to_field: str, day, note: str = ""
+    ) -> Month:
         def fn(m: Month) -> None:
             fs, _ = m.locate_field(from_field)
             ts, _ = m.locate_field(to_field)
-            m.transfer(fs, from_field, ts, to_field, self._resolve_day(m, day), amount, note=note)
+            m.transfer(
+                fs,
+                from_field,
+                ts,
+                to_field,
+                self._resolve_day(m, day),
+                amount,
+                note=note,
+            )
 
         return self._mutate(fn)
 
-    def edit_transaction(self, index: int, *, amount=None, day=None, description=None) -> Month:
+    def edit_transaction(
+        self, index: int, *, amount=None, day=None, description=None
+    ) -> Month:
         return self._mutate(
-            lambda m: m.edit_transaction(self._tx_at(m, index), amount=amount, day=day, description=description)
+            lambda m: m.edit_transaction(
+                self._tx_at(m, index), amount=amount, day=day, description=description
+            )
         )
 
     def delete_transaction(self, index: int) -> Month:
@@ -208,19 +235,27 @@ class MonayApp:
     # Fields
     # =====================================================================
     def add_field(self, section: str, name: str, budget: Money, cap) -> Month:
-        return self._mutate(lambda m: m.add_field(section, name, budget, cap, self._default_pocket(m)))
+        return self._mutate(
+            lambda m: m.add_field(section, name, budget, cap, self._default_pocket(m))
+        )
 
     def set_field_budget(self, name: str, budget: Money) -> Month:
-        return self._mutate(lambda m: m.set_field_budget(self._sec(m, name), name, budget))
+        return self._mutate(
+            lambda m: m.set_field_budget(self._sec(m, name), name, budget)
+        )
 
     def set_field_cap(self, name: str, cap) -> Month:
         return self._mutate(lambda m: m.set_field_cap(self._sec(m, name), name, cap))
 
     def set_field_pocket(self, name: str, pocket: str) -> Month:
-        return self._mutate(lambda m: m.set_field_pocket(self._sec(m, name), name, pocket))
+        return self._mutate(
+            lambda m: m.set_field_pocket(self._sec(m, name), name, pocket)
+        )
 
     def rename_field(self, name: str, new_name: str) -> Month:
-        return self._mutate(lambda m: m.rename_field(self._sec(m, name), name, new_name))
+        return self._mutate(
+            lambda m: m.rename_field(self._sec(m, name), name, new_name)
+        )
 
     def delete_field(self, name: str) -> Month:
         return self._mutate(lambda m: m.delete_field(self._sec(m, name), name))
@@ -230,7 +265,10 @@ class MonayApp:
         with self._uow_factory() as uow:
             m = self._load_active(uow)
             if m.key != min(uow.months.keys(self.profile_id)):
-                raise BadUsage("CURRENT can only be set in the first month; afterwards it carries automatically")
+                raise BadUsageError(
+                    "CURRENT can only be set in the first month; "
+                    "afterwards it carries automatically"
+                )
             section, _ = m.locate_field(name)
             m.set_field_current(section, name, current)
             uow.months.save(m)
@@ -240,8 +278,12 @@ class MonayApp:
     # =====================================================================
     # Sections / income / pockets
     # =====================================================================
-    def add_section(self, kind: str, name: str, *, percentage=None, amount=None) -> Month:
-        return self._mutate(lambda m: m.add_section(name, kind, percentage=percentage, amount=amount))
+    def add_section(
+        self, kind: str, name: str, *, percentage=None, amount=None
+    ) -> Month:
+        return self._mutate(
+            lambda m: m.add_section(name, kind, percentage=percentage, amount=amount)
+        )
 
     def set_section_pct(self, name: str, percentage) -> Month:
         return self._mutate(lambda m: m.edit_section(name, percentage=percentage))
@@ -265,7 +307,9 @@ class MonayApp:
         return self._mutate(lambda m: m.add_income(name, amount))
 
     def set_income(self, name: str, *, new_name=None, amount=None) -> Month:
-        return self._mutate(lambda m: m.edit_income(self._income(m, name), name=new_name, amount=amount))
+        return self._mutate(
+            lambda m: m.edit_income(self._income(m, name), name=new_name, amount=amount)
+        )
 
     def delete_income(self, name: str) -> Month:
         return self._mutate(lambda m: m.delete_income(self._income(m, name)))
@@ -288,7 +332,9 @@ class MonayApp:
     def close_summary(self) -> str:
         m = self.active_month()
         m.assert_operable()
-        leftovers = sum((s.rest for s in m.sections if s.rest_routing.is_income), Money.zero())
+        leftovers = sum(
+            (s.rest for s in m.sections if s.rest_routing.is_income), Money.zero()
+        )
         carries = [
             f"{s.name} REST {s.rest.display()} carries"
             for s in m.sections
@@ -323,7 +369,7 @@ class MonayApp:
 
     def open_section(self, name: str) -> None:
         with self._uow_factory() as uow:
-            self._load_active(uow).section(name)  # raises NotFound if missing
+            self._load_active(uow).section(name)  # raises NotFoundError if missing
         self.drilled_section = name
 
     def back(self) -> None:
@@ -348,13 +394,13 @@ class MonayApp:
         key = self.viewing or self._open_key(uow)
         m = uow.months.get(self._require_profile(), key)
         if m is None:
-            raise NotFound(f"no month {key}")
+            raise NotFoundError(f"no month {key}")
         return m
 
     def _open_key(self, uow: UnitOfWork) -> MonthKey:
         keys = uow.months.keys(self._require_profile())
         if not keys:
-            raise NotFound("this profile has no months")
+            raise NotFoundError("this profile has no months")
         return max(keys)
 
     def _resolve_day(self, month: Month, day):
@@ -363,11 +409,13 @@ class MonayApp:
         today = self._clock.today()
         if month.key == MonthKey.from_date(today):
             return today.day
-        raise BadUsage("this isn't the current calendar month — give a day like d5")
+        raise BadUsageError(
+            "this isn't the current calendar month — give a day like d5"
+        )
 
     def _require_profile(self) -> int:
         if self.profile_id is None:
-            raise NoProfile("no profile yet — create one with: profile add <name>")
+            raise NoProfileError("no profile yet — create one with: profile add <name>")
         return self.profile_id
 
     @staticmethod
@@ -379,13 +427,13 @@ class MonayApp:
     def _default_pocket(month: Month) -> str:
         p = next((p for p in month.pockets if p.is_default), None)
         if p is None:
-            raise BadUsage("no default pocket — add one with: pocket add Main")
+            raise BadUsageError("no default pocket — add one with: pocket add Main")
         return p.name
 
     @staticmethod
     def _tx_at(month: Month, index: int):
         if index < 1 or index > len(month.transactions):
-            raise BadUsage(f"no transaction #{index}")
+            raise BadUsageError(f"no transaction #{index}")
         return month.transactions[index - 1]
 
     @staticmethod
@@ -393,4 +441,4 @@ class MonayApp:
         for inc in month.incomes:
             if inc.name == name:
                 return inc
-        raise NotFound(f"no income named {name!r}")
+        raise NotFoundError(f"no income named {name!r}")

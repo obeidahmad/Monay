@@ -81,7 +81,7 @@ class FakeUnitOfWork:
         self.committed = False
         self.rolled_back = False
 
-    def __enter__(self) -> "FakeUnitOfWork":
+    def __enter__(self) -> FakeUnitOfWork:
         return self
 
     def __exit__(self, *exc: object) -> None:
