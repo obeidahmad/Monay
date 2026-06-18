@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a new capability or an enhancement to an existing one.
+title: "feat: <short summary>"
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the **problem** first, then the proposed change. A feature is
+        easier to evaluate when the need behind it is clear.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What can't you do today, or what's awkward?
+      placeholder: |
+        There's no way to see how a field's balance changed across closed months.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Monay do? Sketch the command, screen, or behaviour.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you weighed, and why this one.
+    validations:
+      required: false

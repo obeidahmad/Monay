@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in Monay behaves incorrectly.
+title: "fix: <short summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please fill in enough for the bug to be
+        **reproduced** — that's what makes it fixable.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The actual behaviour, including any error or traceback.
+      placeholder: |
+        Ran `close` on an open month and got a traceback instead of the lock.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: The behaviour you thought was correct.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact sequence — commands, keystrokes, or a minimal script.
+      placeholder: |
+        1. `uv run monay`
+        2. Add income "Salary 1000"
+        3. Press `c` to close
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Output of `monay --version`, or the commit SHA you're on.
+      placeholder: "0.1.0 (or git SHA)"
+    validations:
+      required: false
