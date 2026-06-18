@@ -1,0 +1,28 @@
+name: Task / chore
+description: Maintenance, refactor, tooling, CI, or docs work — no user-facing feature.
+title: "<type>: <short summary>"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For internal work: refactors, CI/tooling, dependency bumps, docs. Pick
+        the label that matches the conventional-commit type you'll use
+        (`refactor`, `ci`, `docs`, `perf`).
+  - type: textarea
+    id: task
+    attributes:
+      label: What needs doing
+      description: The change, and why it's worth doing now.
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: How we'll know it's finished — the acceptance criteria.
+      placeholder: |
+        - [ ] mypy runs in CI
+        - [ ] zero errors on the current tree
+    validations:
+      required: false
