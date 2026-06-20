@@ -9,9 +9,9 @@ the rule here.
 
 ## 1. Read the issue
 
-Run `gh issue view $1 --comments` and read the full body and every comment. The
-issue was filed from a template, so it has structured fields (problem, proposal,
-acceptance criteria). Note its label — `feature` / `bug` / `refactor` / `perf` /
+Run `gh issue view $1 --json number,title,state,labels,body,comments` and read the
+full body and every comment. The issue was filed from a template, so it has
+structured fields (problem, proposal, acceptance criteria). Note its label — `feature` / `bug` / `refactor` / `perf` /
 `ci` / `docs` — you'll need the matching conventional-commit type below.
 
 If anything material is ambiguous, ask me before planning rather than guessing.

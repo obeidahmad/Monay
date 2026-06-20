@@ -12,9 +12,13 @@ CI is unhappy about, then pushing. Make sure you're on the PR's branch first
 Run both and read everything:
 
 ```
-gh pr view $1 --comments
+gh pr view $1 --json number,title,state,body,comments,reviews
+gh api repos/{owner}/{repo}/pulls/$1/comments   # inline review-thread comments
 gh pr checks $1
 ```
+
+The second call fetches inline code-review comments (what the Claude review
+posts) — those live on the review threads, not in `--json comments`.
 
 - **Review comments** come from the Claude GitHub App and any human reviewer.
   They're advisory — read them critically. If a comment is wrong or not worth
