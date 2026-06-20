@@ -17,11 +17,8 @@ gh api repos/{owner}/{repo}/pulls/$1/comments   # inline review-thread comments
 gh pr checks $1
 ```
 
-Use the `--json` form, not `gh pr view --comments`: the bare `--comments` view
-prints nothing in a non-interactive shell when there are no conversation
-comments. Note the second call — inline code-review comments (what the Claude
-review posts) live on the review *threads*, not in `--json comments`, so fetch
-them via `gh api`. `{owner}`/`{repo}` are auto-filled from the current repo.
+The second call fetches inline code-review comments (what the Claude review
+posts) — those live on the review threads, not in `--json comments`.
 
 - **Review comments** come from the Claude GitHub App and any human reviewer.
   They're advisory — read them critically. If a comment is wrong or not worth
