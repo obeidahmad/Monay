@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 
 from .errors import ValidationError
-from .money import Money, money
+from .money import Money, Numeric, money
 
 
 # --- Cap (rollover MAX) ---------------------------------------------------
@@ -29,7 +30,7 @@ class Cap:
     limit: Money | None  # None == infinite
 
     @classmethod
-    def finite(cls, value: object) -> Cap:
+    def finite(cls, value: Numeric | Money) -> Cap:
         amount = money(value)
         if amount.is_negative:
             raise ValidationError(f"cap cannot be negative: {amount!r}")
@@ -54,14 +55,22 @@ class Cap:
 
 
 # --- Percentage -----------------------------------------------------------
+# Raw inputs accepted by Percentage(...) — normalized to a stored Decimal.
+PercentageInput = int | str | Decimal
+
+
 @dataclass(frozen=True)
 class Percentage:
     """A section's share of income, validated to 0–100."""
 
     value: Decimal
 
-    def __post_init__(self) -> None:
-        raw = self.value.value if isinstance(self.value, Percentage) else self.value
+    # An explicit constructor (kept over __post_init__) so the accepted input
+    # domain — int/str/Decimal/Percentage — is honest in the type, while the
+    # stored ``value`` stays a normalized Decimal. @dataclass leaves a
+    # hand-written __init__ alone but still derives __eq__/__hash__ from value.
+    def __init__(self, value: PercentageInput | Percentage) -> None:
+        raw: PercentageInput = value.value if isinstance(value, Percentage) else value
         if isinstance(raw, bool):
             raise ValidationError("percentage cannot be a bool")
         if isinstance(raw, float):
@@ -78,7 +87,7 @@ class Percentage:
                     f"cannot make a percentage from {type(raw).__name__}"
                 )
         except InvalidOperation as exc:
-            raise ValidationError(f"not a valid percentage: {self.value!r}") from exc
+            raise ValidationError(f"not a valid percentage: {value!r}") from exc
         if d < 0 or d > 100:
             raise ValidationError(f"percentage out of range 0–100: {d}")
         object.__setattr__(self, "value", d)
@@ -121,7 +130,7 @@ class MonthKey:
         return cls(int(m.group(1)), int(m.group(2)))
 
     @classmethod
-    def from_date(cls, d) -> MonthKey:
+    def from_date(cls, d: date) -> MonthKey:
         return cls(d.year, d.month)
 
     def next(self) -> MonthKey:

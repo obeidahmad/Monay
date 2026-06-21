@@ -35,8 +35,8 @@ from .errors import (
     SectionNotEmptyError,
     ValidationError,
 )
-from .money import Money, money
-from .values import Cap, Day, MonthKey, Percentage, RestRouting
+from .money import Money, Numeric, money
+from .values import Cap, Day, MonthKey, Percentage, PercentageInput, RestRouting
 
 
 class MonthState(StrEnum):
@@ -105,16 +105,20 @@ class Month:
 
         remaining = self.total_income
         for s in pre:
-            share = (
-                s.amount
-                if s.alloc_kind is AllocKind.AMOUNT
-                else s.percentage.of(remaining)
-            )
+            # alloc_kind and amount/percentage are kept consistent by Section's
+            # invariant, so exactly one of them is set for each branch.
+            if s.alloc_kind is AllocKind.AMOUNT:
+                assert s.amount is not None
+                share = s.amount
+            else:
+                assert s.percentage is not None
+                share = s.percentage.of(remaining)
             s.available = share + s.carried_rest
             remaining = remaining - share
 
         post_shares = Money.zero()
         for s in post:
+            assert s.percentage is not None  # post sections always allocate by %
             share = s.percentage.of(remaining)
             s.available = share + s.carried_rest
             post_shares = post_shares + share
@@ -209,8 +213,8 @@ class Month:
         self,
         section_name: str,
         field_name: str,
-        day,
-        amount,
+        day: Day | int | str,
+        amount: Money | Numeric,
         description: str = "",
         amount_expr: str = "",
     ) -> Transaction:
@@ -228,7 +232,12 @@ class Month:
         return tx
 
     def edit_transaction(
-        self, tx: Transaction, *, day=None, amount=None, description=None
+        self,
+        tx: Transaction,
+        *,
+        day: Day | int | str | None = None,
+        amount: Money | Numeric | None = None,
+        description: str | None = None,
     ) -> None:
         self._require_open()
         if amount is not None:
@@ -253,8 +262,8 @@ class Month:
         from_field: str,
         to_section: str,
         to_field: str,
-        day,
-        amount,
+        day: Day | int | str,
+        amount: Money | Numeric,
         note: str = "",
     ) -> Transfer:
         self._require_open()
@@ -265,6 +274,7 @@ class Month:
         amount = self._positive(amount, "transfer amount")
         self.recompute()  # fresh LEFTs to validate the cap against
         if not dst.cap.is_infinite:
+            assert dst.cap.limit is not None  # not infinite ⟺ a finite limit
             room = dst.cap.limit - dst.left
             if amount > room:
                 raise CapExceededError(
@@ -291,10 +301,10 @@ class Month:
         self,
         section_name: str,
         name: str,
-        budget,
+        budget: Money | Numeric,
         cap: Cap,
         pocket_name: str,
-        current=None,
+        current: Money | Numeric | None = None,
     ) -> Field:
         self._require_open()
         s = self.section(section_name)
@@ -336,7 +346,9 @@ class Month:
         self.section(section_name).fields.remove(f)
         self.recompute()
 
-    def set_field_budget(self, section_name: str, name: str, budget) -> None:
+    def set_field_budget(
+        self, section_name: str, name: str, budget: Money | Numeric
+    ) -> None:
         self._require_open()
         self.field(section_name, name).budget = self._nonneg(budget, "budget")
         self.recompute()
@@ -354,7 +366,9 @@ class Month:
         self.field(section_name, name).pocket = p
         self.recompute()
 
-    def set_field_current(self, section_name: str, name: str, current) -> None:
+    def set_field_current(
+        self, section_name: str, name: str, current: Money | Numeric
+    ) -> None:
         # CURRENT is normally carried from last month; hand-editing is meant for
         # the first (hand-built) month — the app guards that (docs/DEVELOPING.md).
         self._require_open()
@@ -379,8 +393,8 @@ class Month:
         name: str,
         kind: SectionKind,
         *,
-        percentage=None,
-        amount=None,
+        percentage: Percentage | PercentageInput | None = None,
+        amount: Money | Numeric | None = None,
         rest_routing: RestRouting | None = None,
         position: int | None = None,
     ) -> Section:
@@ -418,8 +432,8 @@ class Month:
         name: str,
         *,
         new_name: str | None = None,
-        percentage=None,
-        amount=None,
+        percentage: Percentage | PercentageInput | None = None,
+        amount: Money | Numeric | None = None,
         rest_routing: RestRouting | None = None,
         position: int | None = None,
     ) -> None:
@@ -451,7 +465,7 @@ class Month:
     # Income
     # =====================================================================
     def add_income(
-        self, name: str, amount, kind: IncomeKind = IncomeKind.MANUAL
+        self, name: str, amount: Money | Numeric, kind: IncomeKind = IncomeKind.MANUAL
     ) -> Income:
         self._require_open()
         inc = Income(
@@ -464,7 +478,13 @@ class Month:
         self.recompute()
         return inc
 
-    def edit_income(self, income: Income, *, name=None, amount=None) -> None:
+    def edit_income(
+        self,
+        income: Income,
+        *,
+        name: str | None = None,
+        amount: Money | Numeric | None = None,
+    ) -> None:
         self._require_open()
         if name is not None:
             income.name = name
@@ -539,28 +559,30 @@ class Month:
         post = [s for s in self.sections if s.kind is SectionKind.POST]
         if not post:
             return None
-        return sum((s.percentage.value for s in post), Decimal(0))
+        return sum(
+            (s.percentage.value for s in post if s.percentage is not None), Decimal(0)
+        )
 
     def _next_section_position(self) -> int:
         return max((s.position for s in self.sections), default=-1) + 1
 
     @staticmethod
-    def _as_percentage(value) -> Percentage:
+    def _as_percentage(value: Percentage | PercentageInput) -> Percentage:
         return value if isinstance(value, Percentage) else Percentage(value)
 
     @staticmethod
-    def _day(value) -> Day:
+    def _day(value: Day | int | str) -> Day:
         return value if isinstance(value, Day) else Day(int(value))
 
     @staticmethod
-    def _positive(amount, what: str) -> Money:
+    def _positive(amount: Money | Numeric, what: str) -> Money:
         m = amount if isinstance(amount, Money) else Money(amount)
         if not m.is_positive:
             raise ValidationError(f"{what} must be positive, got {m}")
         return m
 
     @staticmethod
-    def _nonneg(amount, what: str) -> Money:
+    def _nonneg(amount: Money | Numeric, what: str) -> Money:
         m = amount if isinstance(amount, Money) else Money(amount)
         if m.is_negative:
             raise ValidationError(f"{what} cannot be negative, got {m}")
