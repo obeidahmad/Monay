@@ -8,8 +8,11 @@ from __future__ import annotations
 from rich.console import Group, RenderableType
 from rich.text import Text
 
+from monay.app.services import MonayApp
+from monay.domain.entities import Profile
 
-def render_settings(service, profiles) -> RenderableType:
+
+def render_settings(service: MonayApp, profiles: list[Profile]) -> RenderableType:
     head = Text()
     head.append("Profile: ", style="dim")
     head.append(service.profile_name or "—", style="bold")

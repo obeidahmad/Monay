@@ -12,12 +12,13 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
-from monay.domain.entities import AllocKind
+from monay.domain.entities import AllocKind, Section
+from monay.domain.month import Month
 from monay.tui import theme
 from monay.tui.format import cap_str, money_str, signed
 
 
-def build(month, section_name: str, currency: str = "€") -> RenderableType:
+def build(month: Month, section_name: str, currency: str = "€") -> RenderableType:
     s = month.section(section_name)
     accent = _accent_for(month, s)
 
@@ -53,12 +54,14 @@ def build(month, section_name: str, currency: str = "€") -> RenderableType:
     return Group(header, table)
 
 
-def _kind_label(s) -> str:
+def _kind_label(s: Section) -> str:
     if s.alloc_kind is AllocKind.PCT:
+        assert s.percentage is not None
         return f"{s.kind.value} {s.percentage.value}%"
+    assert s.amount is not None
     return f"{s.kind.value} {money_str(s.amount)}"
 
 
-def _accent_for(month, section) -> str:
+def _accent_for(month: Month, section: Section) -> str:
     order = sorted(month.sections, key=lambda s: s.position)
     return theme.section_accent(order.index(section))

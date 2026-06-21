@@ -9,9 +9,10 @@ registry, runs it against the ``MonayApp`` service, and shows the result. Typed
 
 from __future__ import annotations
 
+from rich.console import RenderableType
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Static, Tab, Tabs
+from textual.widgets import Input, Static, Tab, Tabs
 
 from monay.app.commands import CommandRegistry, Result
 from monay.app.services import MonayApp, month_label
@@ -27,7 +28,7 @@ from monay.tui.screens.transactions import render_transactions
 _TABS = ("budget", "transactions", "pockets", "history", "settings")
 
 
-class Monay(App):
+class Monay(App[None]):
     CSS = f"""
     Screen {{ background: {theme.BG}; }}
     #context {{
@@ -67,7 +68,7 @@ class Monay(App):
         self._refresh()
 
     # --- command loop -----------------------------------------------------
-    def on_input_submitted(self, event) -> None:
+    def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
         self.query_one(CommandBar).value = ""
         if not text:
@@ -83,6 +84,7 @@ class Monay(App):
 
     def _answer_confirmation(self, text: str) -> None:
         pending, self._pending = self._pending, None
+        assert pending is not None  # only entered while a confirmation is pending
         if text == "Yes":
             result = self._commands.execute(self._service, pending, confirmed=True)
         elif text == "No":
@@ -100,7 +102,7 @@ class Monay(App):
 
     # --- rendering --------------------------------------------------------
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
-        if event.tab is not None:
+        if event.tab is not None and event.tab.id is not None:
             self._service.tab = event.tab.id
             self.query_one("#content", Static).update(self._content_renderable())
 
@@ -131,7 +133,7 @@ class Monay(App):
         state = "🔒 closed" if s.viewing_closed else "● open"
         return f"{month_label(s.viewing)}   {state}      Profile: {s.profile_name}"
 
-    def _content_renderable(self):
+    def _content_renderable(self) -> RenderableType:
         s = self._service
         if s.profile_id is None:
             return "No profile — type:  profile add <name>"
