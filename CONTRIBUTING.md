@@ -93,7 +93,7 @@ burn a round-trip:
 
 ```bash
 uv run ruff check        # lint
-uv run ruff format       # format (CI checks with --format --check)
+uv run ruff format       # auto-formats in place; CI verifies with --check
 uv run mypy              # type-check monay/ (strict)
 uv run pytest            # the suite
 ```
