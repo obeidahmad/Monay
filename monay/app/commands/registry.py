@@ -10,9 +10,17 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from monay.app.errors import AppError
 from monay.domain.errors import MonayError
+
+if TYPE_CHECKING:
+    from monay.app.services import MonayApp
+
+# A parsed command's arguments: name -> value, where the value type depends on
+# the arg's kind (str, Money, int, or None), so it is intentionally dynamic.
+Args = dict[str, Any]
 
 # --- argument kinds -------------------------------------------------------
 FIELD = "field"
@@ -42,9 +50,9 @@ class CommandSpec:
     path: tuple[str, ...]
     args: tuple[Arg, ...]
     help: str
-    handler: Callable
+    handler: Handler
     confirm: bool = False
-    summary: Callable | None = None  # builds the confirmation prompt
+    summary: SummaryFn | None = None  # builds the confirmation prompt
 
     @property
     def name(self) -> str:
@@ -67,7 +75,7 @@ class Result:
     pending: str | None = None
 
     @classmethod
-    def ok(cls, message: str, month=None) -> Result:
+    def ok(cls, message: str, month: object = None) -> Result:
         return cls("ok", message, month=month)
 
     @classmethod
@@ -75,12 +83,18 @@ class Result:
         return cls("error", message)
 
     @classmethod
-    def info(cls, message: str, data=None) -> Result:
+    def info(cls, message: str, data: object = None) -> Result:
         return cls("info", message, data=data)
 
     @classmethod
     def confirm(cls, prompt: str, pending: str) -> Result:
         return cls("confirm", prompt, pending=pending)
+
+
+# A handler turns (app, parsed args) into a Result; a summary builds the
+# confirmation prompt for commands that ask before acting.
+Handler = Callable[["MonayApp", Args], Result]
+SummaryFn = Callable[["MonayApp", Args], str]
 
 
 class CommandRegistry:
@@ -97,7 +111,7 @@ class CommandRegistry:
     def verbs(self) -> list[str]:
         return sorted({s.path[0] for s in self._specs})
 
-    def execute(self, app, text: str, confirmed: bool = False) -> Result:
+    def execute(self, app: MonayApp, text: str, confirmed: bool = False) -> Result:
         from .parser import parse  # local import to avoid a cycle
 
         try:

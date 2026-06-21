@@ -391,7 +391,7 @@ class Month:
     def add_section(
         self,
         name: str,
-        kind: SectionKind,
+        kind: SectionKind | str,
         *,
         percentage: Percentage | PercentageInput | None = None,
         amount: Money | Numeric | None = None,
