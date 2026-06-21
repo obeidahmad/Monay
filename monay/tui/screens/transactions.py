@@ -12,12 +12,13 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
+from monay.domain.month import Month
 from monay.tui import theme
 from monay.tui.format import money_str
 
 
 def render_transactions(
-    month, tx_filter: str | None, currency: str = "€"
+    month: Month, tx_filter: str | None, currency: str = "€"
 ) -> RenderableType:
     if not month.transactions and not month.transfers:
         return Text("No transactions yet — add <field> <amount>", style="dim")
@@ -57,13 +58,13 @@ def render_transactions(
         transfers.add_column("From → To")
         transfers.add_column("Amount", justify="right")
         transfers.add_column("Note")
-        for t in month.transfers:
+        for tr in month.transfers:
             transfers.add_row(
                 "⇄",
-                str(int(t.day)),
-                f"{t.from_field.name} → {t.to_field.name}",
-                money_str(t.amount),
-                t.note or "",
+                str(int(tr.day)),
+                f"{tr.from_field.name} → {tr.to_field.name}",
+                money_str(tr.amount),
+                tr.note or "",
             )
         blocks.append(transfers)
 

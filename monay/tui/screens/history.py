@@ -10,10 +10,14 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
+from monay.app.services import MonthSummary
+from monay.domain.values import MonthKey
 from monay.tui.format import money_str
 
 
-def render_history(summaries, viewing) -> RenderableType:
+def render_history(
+    summaries: list[MonthSummary], viewing: MonthKey | None
+) -> RenderableType:
     if not summaries:
         return Text("No months yet.", style="dim")
 

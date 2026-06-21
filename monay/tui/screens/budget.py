@@ -10,11 +10,12 @@ from rich.console import RenderableType
 from rich.text import Text
 
 from monay.domain.errors import NotFoundError
+from monay.domain.month import Month
 from monay.tui.widgets import section_detail, section_list
 
 
 def render_budget(
-    month, drilled_section: str | None, currency: str = "€"
+    month: Month | None, drilled_section: str | None, currency: str = "€"
 ) -> RenderableType:
     if month is None:
         return Text("No month yet.", style="dim")

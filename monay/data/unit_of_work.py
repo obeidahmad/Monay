@@ -19,7 +19,7 @@ class SqlAlchemyUnitOfWork:
     def __init__(self, engine: sa.Engine) -> None:
         self._engine = engine
         self._conn: sa.Connection | None = None
-        self._tx = None
+        self._tx: sa.RootTransaction | None = None
 
     def __enter__(self) -> SqlAlchemyUnitOfWork:
         self._conn = self._engine.connect()
@@ -39,6 +39,7 @@ class SqlAlchemyUnitOfWork:
             self._tx = None
 
     def commit(self) -> None:
+        assert self._tx is not None  # commit is only valid inside `with uow:`
         self._tx.commit()
 
     def rollback(self) -> None:

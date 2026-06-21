@@ -105,4 +105,5 @@ class MonthCloser:
             return None
         if routing.kind is RoutingKind.SELF:
             return sections.get(section.name)
-        return sections.get(routing.target)  # SECTION; None ⇒ fallback to income
+        assert routing.target is not None  # SECTION routing always has a target
+        return sections.get(routing.target)  # None ⇒ fallback to income

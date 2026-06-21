@@ -5,12 +5,14 @@ Autocomplete (dropdown + ghost text) is Phase 12; this is the plain input loop.
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual import events
 from textual.widgets import Input
 
 
 class CommandBar(Input):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(placeholder="type a command…  (try: help)", **kwargs)
         self._history: list[str] = []
         self._index: int = 0  # == len(history) means "the new, empty line"

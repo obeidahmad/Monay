@@ -9,15 +9,17 @@ from __future__ import annotations
 from rich.console import Group, RenderableType
 from rich.text import Text
 
+from monay.domain.entities import Field
 from monay.domain.money import Money
+from monay.domain.month import Month
 from monay.tui.format import money_str, signed
 
 
-def render_pockets(month, currency: str = "€") -> RenderableType:
+def render_pockets(month: Month, currency: str = "€") -> RenderableType:
     if not month.pockets:
         return Text("No pockets — pocket add Main", style="dim")
 
-    fields_by_pocket: dict[str, list] = {}
+    fields_by_pocket: dict[str, list[Field]] = {}
     for s in month.sections:
         for f in s.fields:
             fields_by_pocket.setdefault(f.pocket.name, []).append(f)

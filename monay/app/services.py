@@ -15,12 +15,12 @@ from dataclasses import dataclass
 
 from monay.app.errors import BadUsageError, NoProfileError
 from monay.domain.closing import MonthCloser
-from monay.domain.entities import Profile
+from monay.domain.entities import Income, Profile, Transaction
 from monay.domain.errors import DuplicateNameError, NotFoundError
-from monay.domain.money import Money
+from monay.domain.money import Money, Numeric
 from monay.domain.month import Month, MonthState
 from monay.domain.ports import Clock, UnitOfWork
-from monay.domain.values import MonthKey
+from monay.domain.values import Cap, MonthKey, Percentage, PercentageInput, RestRouting
 
 
 def month_label(key: MonthKey) -> str:
@@ -63,6 +63,7 @@ class MonayApp:
             profile = uow.profiles.add(
                 Profile(name=name, created_at=self._clock.today())
             )
+            assert profile.id is not None  # just inserted; the repo set its id
             month = Month(profile_id=profile.id, key=first, state=MonthState.OPEN)
             month.add_pocket("Main", is_default=True)
             uow.months.add(month)
@@ -76,26 +77,29 @@ class MonayApp:
             p = uow.profiles.by_name(name)
             if p is None:
                 raise NotFoundError(f"no profile named {name!r}")
+            assert p.id is not None  # a stored profile always has an id
             keys = uow.months.keys(p.id)
         self._select(p)
         self.viewing, self.viewing_closed = (max(keys) if keys else None), False
         return p
 
     def rename_profile(self, new_name: str) -> None:
-        self._require_profile()
+        pid = self._require_profile()
         with self._uow_factory() as uow:
             if uow.profiles.by_name(new_name) is not None:
                 raise DuplicateNameError(f"a profile named {new_name!r} already exists")
-            p = uow.profiles.get(self.profile_id)
+            p = uow.profiles.get(pid)
+            assert p is not None  # the active profile exists in storage
             p.name = new_name
             uow.profiles.update(p)
             uow.commit()
         self.profile_name = new_name
 
     def set_currency(self, symbol: str) -> None:
-        self._require_profile()
+        pid = self._require_profile()
         with self._uow_factory() as uow:
-            p = uow.profiles.get(self.profile_id)
+            p = uow.profiles.get(pid)
+            assert p is not None  # the active profile exists in storage
             p.currency_symbol = symbol
             uow.profiles.update(p)
             uow.commit()
@@ -106,6 +110,7 @@ class MonayApp:
             p = uow.profiles.by_name(name)
             if p is None:
                 raise NotFoundError(f"no profile named {name!r}")
+            assert p.id is not None  # a stored profile always has an id
             uow.profiles.delete(p.id)
             uow.commit()
             remaining = uow.profiles.all()
@@ -170,9 +175,11 @@ class MonayApp:
     def month_summaries(self) -> list[MonthSummary]:
         """One summary per month, newest first (for the History tab)."""
         out: list[MonthSummary] = []
+        pid = self._require_profile()
         with self._uow_factory() as uow:
-            for key in sorted(uow.months.keys(self._require_profile()), reverse=True):
-                m = uow.months.get(self.profile_id, key)
+            for key in sorted(uow.months.keys(pid), reverse=True):
+                m = uow.months.get(pid, key)
+                assert m is not None  # key came from this profile's month list
                 spent = sum(
                     (f.paid for s in m.sections for f in s.fields), Money.zero()
                 )
@@ -187,7 +194,7 @@ class MonayApp:
     # Transactions / transfers
     # =====================================================================
     def add_transaction(
-        self, field_name: str, amount: Money, day, description: str = ""
+        self, field_name: str, amount: Money, day: int | None, description: str = ""
     ) -> Month:
         def fn(m: Month) -> None:
             section, _ = m.locate_field(field_name)
@@ -202,7 +209,12 @@ class MonayApp:
         return self._mutate(fn)
 
     def transfer(
-        self, amount: Money, from_field: str, to_field: str, day, note: str = ""
+        self,
+        amount: Money,
+        from_field: str,
+        to_field: str,
+        day: int | None,
+        note: str = "",
     ) -> Month:
         def fn(m: Month) -> None:
             fs, _ = m.locate_field(from_field)
@@ -220,7 +232,12 @@ class MonayApp:
         return self._mutate(fn)
 
     def edit_transaction(
-        self, index: int, *, amount=None, day=None, description=None
+        self,
+        index: int,
+        *,
+        amount: Money | None = None,
+        day: int | None = None,
+        description: str | None = None,
     ) -> Month:
         return self._mutate(
             lambda m: m.edit_transaction(
@@ -234,7 +251,7 @@ class MonayApp:
     # =====================================================================
     # Fields
     # =====================================================================
-    def add_field(self, section: str, name: str, budget: Money, cap) -> Month:
+    def add_field(self, section: str, name: str, budget: Money, cap: Cap) -> Month:
         return self._mutate(
             lambda m: m.add_field(section, name, budget, cap, self._default_pocket(m))
         )
@@ -244,7 +261,7 @@ class MonayApp:
             lambda m: m.set_field_budget(self._sec(m, name), name, budget)
         )
 
-    def set_field_cap(self, name: str, cap) -> Month:
+    def set_field_cap(self, name: str, cap: Cap) -> Month:
         return self._mutate(lambda m: m.set_field_cap(self._sec(m, name), name, cap))
 
     def set_field_pocket(self, name: str, pocket: str) -> Month:
@@ -261,10 +278,10 @@ class MonayApp:
         return self._mutate(lambda m: m.delete_field(self._sec(m, name), name))
 
     def set_field_current(self, name: str, current: Money) -> Month:
-        self._require_profile()
+        pid = self._require_profile()
         with self._uow_factory() as uow:
             m = self._load_active(uow)
-            if m.key != min(uow.months.keys(self.profile_id)):
+            if m.key != min(uow.months.keys(pid)):
                 raise BadUsageError(
                     "CURRENT can only be set in the first month; "
                     "afterwards it carries automatically"
@@ -279,22 +296,29 @@ class MonayApp:
     # Sections / income / pockets
     # =====================================================================
     def add_section(
-        self, kind: str, name: str, *, percentage=None, amount=None
+        self,
+        kind: str,
+        name: str,
+        *,
+        percentage: Percentage | PercentageInput | None = None,
+        amount: Money | Numeric | None = None,
     ) -> Month:
         return self._mutate(
             lambda m: m.add_section(name, kind, percentage=percentage, amount=amount)
         )
 
-    def set_section_pct(self, name: str, percentage) -> Month:
+    def set_section_pct(
+        self, name: str, percentage: Percentage | PercentageInput
+    ) -> Month:
         return self._mutate(lambda m: m.edit_section(name, percentage=percentage))
 
-    def set_section_amount(self, name: str, amount) -> Month:
+    def set_section_amount(self, name: str, amount: Money | Numeric) -> Month:
         return self._mutate(lambda m: m.edit_section(name, amount=amount))
 
     def rename_section(self, name: str, new_name: str) -> Month:
         return self._mutate(lambda m: m.edit_section(name, new_name=new_name))
 
-    def set_section_routing(self, name: str, routing) -> Month:
+    def set_section_routing(self, name: str, routing: RestRouting) -> Month:
         return self._mutate(lambda m: m.edit_section(name, rest_routing=routing))
 
     def order_section(self, name: str, position: int) -> Month:
@@ -306,7 +330,13 @@ class MonayApp:
     def add_income(self, name: str, amount: Money) -> Month:
         return self._mutate(lambda m: m.add_income(name, amount))
 
-    def set_income(self, name: str, *, new_name=None, amount=None) -> Month:
+    def set_income(
+        self,
+        name: str,
+        *,
+        new_name: str | None = None,
+        amount: Money | Numeric | None = None,
+    ) -> Month:
         return self._mutate(
             lambda m: m.edit_income(self._income(m, name), name=new_name, amount=amount)
         )
@@ -381,7 +411,7 @@ class MonayApp:
     # =====================================================================
     # Internals
     # =====================================================================
-    def _mutate(self, fn: Callable[[Month], None]) -> Month:
+    def _mutate(self, fn: Callable[[Month], object]) -> Month:
         self._require_profile()
         with self._uow_factory() as uow:
             m = self._load_active(uow)
@@ -403,7 +433,7 @@ class MonayApp:
             raise NotFoundError("this profile has no months")
         return max(keys)
 
-    def _resolve_day(self, month: Month, day):
+    def _resolve_day(self, month: Month, day: int | None) -> int:
         if day is not None:
             return day
         today = self._clock.today()
@@ -431,13 +461,13 @@ class MonayApp:
         return p.name
 
     @staticmethod
-    def _tx_at(month: Month, index: int):
+    def _tx_at(month: Month, index: int) -> Transaction:
         if index < 1 or index > len(month.transactions):
             raise BadUsageError(f"no transaction #{index}")
         return month.transactions[index - 1]
 
     @staticmethod
-    def _income(month: Month, name: str):
+    def _income(month: Month, name: str) -> Income:
         for inc in month.incomes:
             if inc.name == name:
                 return inc

@@ -22,4 +22,7 @@ def signed(m: Money) -> Text:
 
 
 def cap_str(cap: Cap) -> str:
-    return "∞" if cap.is_infinite else money_str(cap.limit)
+    if cap.is_infinite:
+        return "∞"
+    assert cap.limit is not None  # finite ⟺ a concrete limit
+    return money_str(cap.limit)

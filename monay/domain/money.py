@@ -50,6 +50,7 @@ class Money:
     """An immutable amount of money, stored at 4dp / banker's rounding."""
 
     __slots__ = ("_amount",)
+    _amount: Decimal
 
     def __init__(self, value: Numeric | Money = 0) -> None:
         object.__setattr__(
@@ -147,10 +148,10 @@ class Money:
     def __copy__(self) -> Money:
         return self
 
-    def __deepcopy__(self, memo: dict) -> Money:
+    def __deepcopy__(self, memo: dict[int, object]) -> Money:
         return self
 
-    def __reduce__(self):
+    def __reduce__(self) -> tuple[type[Money], tuple[str]]:
         return (Money, (str(self._amount),))
 
     # --- repr -------------------------------------------------------------

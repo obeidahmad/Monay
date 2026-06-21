@@ -11,9 +11,10 @@ from __future__ import annotations
 from monay.app.services import MonayApp, month_label
 from monay.domain.expressions import evaluate
 from monay.domain.money import Money
+from monay.domain.month import Month
 from monay.domain.values import Cap, Percentage, RestRouting
 
-from .registry import Result
+from .registry import Args, Result, SummaryFn
 
 
 # --- small interpreters ---------------------------------------------------
@@ -36,7 +37,7 @@ def _routing(token: str) -> RestRouting:
     return RestRouting.to_section(token)
 
 
-def _field_line(month, field_name: str, verb: str) -> str:
+def _field_line(month: Month, field_name: str, verb: str) -> str:
     section, f = month.locate_field(field_name)
     rest = month.section(section).rest
     return (
@@ -46,17 +47,17 @@ def _field_line(month, field_name: str, verb: str) -> str:
 
 
 # --- transactions / transfers --------------------------------------------
-def h_add(app: MonayApp, a: dict) -> Result:
+def h_add(app: MonayApp, a: Args) -> Result:
     m = app.add_transaction(a["field"], a["amount"], a["day"], a["description"] or "")
     return Result.ok(_field_line(m, a["field"], f"−{a['amount'].display()}"), m)
 
 
-def h_transfer(app: MonayApp, a: dict) -> Result:
+def h_transfer(app: MonayApp, a: Args) -> Result:
     m = app.transfer(a["amount"], a["from"], a["to"], a["day"], a["note"] or "")
     return Result.ok(f"✓ moved {a['amount'].display()} {a['from']} → {a['to']}", m)
 
 
-def h_tx(app: MonayApp, a: dict) -> Result:
+def h_tx(app: MonayApp, a: Args) -> Result:
     flt = (a["filter"] or "").strip() or None
     app.set_tx_filter(flt)
     return Result.info(
@@ -64,9 +65,9 @@ def h_tx(app: MonayApp, a: dict) -> Result:
     )
 
 
-def h_tx_edit(app: MonayApp, a: dict) -> Result:
+def h_tx_edit(app: MonayApp, a: Args) -> Result:
     attr, value = a["attr"], a["value"]
-    kw = {}
+    kw: Args = {}
     if attr == "amount":
         kw["amount"] = evaluate(value)
     elif attr == "day":
@@ -77,13 +78,13 @@ def h_tx_edit(app: MonayApp, a: dict) -> Result:
     return Result.ok(f"✓ transaction #{a['index']} updated", m)
 
 
-def h_tx_del(app: MonayApp, a: dict) -> Result:
+def h_tx_del(app: MonayApp, a: Args) -> Result:
     m = app.delete_transaction(a["index"])
     return Result.ok(f"✓ transaction #{a['index']} deleted", m)
 
 
 # --- sections -------------------------------------------------------------
-def h_section_add(app: MonayApp, a: dict) -> Result:
+def h_section_add(app: MonayApp, a: Args) -> Result:
     token = a["alloc"]
     if token.endswith("%"):
         m = app.add_section(a["kind"], a["name"], percentage=_percentage(token))
@@ -92,7 +93,7 @@ def h_section_add(app: MonayApp, a: dict) -> Result:
     return Result.ok(f"✓ section {a['name']} ({a['kind']})", m)
 
 
-def h_section_set(app: MonayApp, a: dict) -> Result:
+def h_section_set(app: MonayApp, a: Args) -> Result:
     attr, name, value = a["attr"], a["name"], a["value"]
     if attr == "pct":
         m = app.set_section_pct(name, _percentage(value))
@@ -105,25 +106,25 @@ def h_section_set(app: MonayApp, a: dict) -> Result:
     return Result.ok(f"✓ section {name} updated", m)
 
 
-def h_section_order(app: MonayApp, a: dict) -> Result:
+def h_section_order(app: MonayApp, a: Args) -> Result:
     m = app.order_section(a["name"], a["position"])
     return Result.ok(f"✓ section {a['name']} → position {a['position']}", m)
 
 
-def h_section_del(app: MonayApp, a: dict) -> Result:
+def h_section_del(app: MonayApp, a: Args) -> Result:
     m = app.delete_section(a["name"])
     return Result.ok(f"✓ section {a['name']} deleted", m)
 
 
 # --- fields ---------------------------------------------------------------
-def h_field_add(app: MonayApp, a: dict) -> Result:
+def h_field_add(app: MonayApp, a: Args) -> Result:
     budget = a["budget"] if a["budget"] is not None else Money("0")
     cap = _cap(a["cap"]) if a["cap"] is not None else Cap.infinite()
     m = app.add_field(a["section"], a["name"], budget, cap)
     return Result.ok(f"✓ field {a['name']} added to {a['section']}", m)
 
 
-def h_field_set(app: MonayApp, a: dict) -> Result:
+def h_field_set(app: MonayApp, a: Args) -> Result:
     attr, name, value = a["attr"], a["name"], a["value"]
     if attr == "budget":
         m = app.set_field_budget(name, evaluate(value))
@@ -140,13 +141,13 @@ def h_field_set(app: MonayApp, a: dict) -> Result:
     )
 
 
-def h_field_del(app: MonayApp, a: dict) -> Result:
+def h_field_del(app: MonayApp, a: Args) -> Result:
     m = app.delete_field(a["name"])
     return Result.ok(f"✓ field {a['name']} deleted", m)
 
 
 # --- income ---------------------------------------------------------------
-def h_income_add(app: MonayApp, a: dict) -> Result:
+def h_income_add(app: MonayApp, a: Args) -> Result:
     m = app.add_income(a["name"], a["amount"])
     return Result.ok(
         f"✓ income {a['name']} {a['amount'].display()} "
@@ -155,7 +156,7 @@ def h_income_add(app: MonayApp, a: dict) -> Result:
     )
 
 
-def h_income_set(app: MonayApp, a: dict) -> Result:
+def h_income_set(app: MonayApp, a: Args) -> Result:
     if a["attr"] == "name":
         m = app.set_income(a["name"], new_name=a["value"])
     else:
@@ -163,34 +164,34 @@ def h_income_set(app: MonayApp, a: dict) -> Result:
     return Result.ok(f"✓ income {a['name']} updated", m)
 
 
-def h_income_del(app: MonayApp, a: dict) -> Result:
+def h_income_del(app: MonayApp, a: Args) -> Result:
     m = app.delete_income(a["name"])
     return Result.ok(f"✓ income {a['name']} deleted", m)
 
 
 # --- pockets --------------------------------------------------------------
-def h_pocket_add(app: MonayApp, a: dict) -> Result:
+def h_pocket_add(app: MonayApp, a: Args) -> Result:
     m = app.add_pocket(a["name"])
     return Result.ok(f"✓ pocket {a['name']} added", m)
 
 
-def h_pocket_rename(app: MonayApp, a: dict) -> Result:
+def h_pocket_rename(app: MonayApp, a: Args) -> Result:
     m = app.rename_pocket(a["old"], a["new"])
     return Result.ok(f"✓ pocket {a['old']} → {a['new']}", m)
 
 
-def h_pocket_del(app: MonayApp, a: dict) -> Result:
+def h_pocket_del(app: MonayApp, a: Args) -> Result:
     m = app.delete_pocket(a["name"])
     return Result.ok(f"✓ pocket {a['name']} deleted", m)
 
 
-def h_pocket_main(app: MonayApp, a: dict) -> Result:
+def h_pocket_main(app: MonayApp, a: Args) -> Result:
     m = app.set_main_pocket(a["name"])
     return Result.ok(f"✓ {a['name']} is now the default pocket", m)
 
 
 # --- months / nav / profiles ---------------------------------------------
-def h_month(app: MonayApp, a: dict) -> Result:
+def h_month(app: MonayApp, a: Args) -> Result:
     if a["key"] is None:
         key = app.view_open_month()
         return Result.info(f"viewing the open month {month_label(key)}")
@@ -199,53 +200,53 @@ def h_month(app: MonayApp, a: dict) -> Result:
     return Result.info(f"viewing {month_label(key)} ({state})")
 
 
-def h_close(app: MonayApp, a: dict) -> Result:
+def h_close(app: MonayApp, a: Args) -> Result:
     nxt = app.close_active()
     return Result.ok(f"✓ closed — now in {month_label(nxt.key)}", nxt)
 
 
-def h_goto(app: MonayApp, a: dict) -> Result:
+def h_goto(app: MonayApp, a: Args) -> Result:
     app.goto(a["tab"])
     return Result.info(f"→ {a['tab']}")
 
 
-def h_open(app: MonayApp, a: dict) -> Result:
+def h_open(app: MonayApp, a: Args) -> Result:
     app.open_section(a["section"])
     return Result.info(f"opened {a['section']}")
 
 
-def h_back(app: MonayApp, a: dict) -> Result:
+def h_back(app: MonayApp, a: Args) -> Result:
     app.back()
     return Result.info("back to sections")
 
 
-def h_profile_add(app: MonayApp, a: dict) -> Result:
+def h_profile_add(app: MonayApp, a: Args) -> Result:
     p = app.create_profile(a["name"])
     return Result.info(f"✓ profile {p.name} created and selected")
 
 
-def h_profile_switch(app: MonayApp, a: dict) -> Result:
+def h_profile_switch(app: MonayApp, a: Args) -> Result:
     p = app.switch_profile(a["name"])
     return Result.info(f"✓ switched to {p.name}")
 
 
-def h_profile_rename(app: MonayApp, a: dict) -> Result:
+def h_profile_rename(app: MonayApp, a: Args) -> Result:
     app.rename_profile(a["name"])
     return Result.info(f"✓ profile renamed to {a['name']}")
 
 
-def h_profile_del(app: MonayApp, a: dict) -> Result:
+def h_profile_del(app: MonayApp, a: Args) -> Result:
     app.delete_profile(a["name"])
     return Result.info(f"✓ profile {a['name']} deleted")
 
 
-def h_quit(app: MonayApp, a: dict) -> Result:
+def h_quit(app: MonayApp, a: Args) -> Result:
     app.quit()
     return Result.info("bye")
 
 
 # --- help (registry-generated) -------------------------------------------
-def h_help(app: MonayApp, a: dict) -> Result:
+def h_help(app: MonayApp, a: Args) -> Result:
     from .specs import REGISTRY
 
     query = (a["command"] or "").strip().lower()
@@ -259,12 +260,12 @@ def h_help(app: MonayApp, a: dict) -> Result:
 
 
 # --- close summary (confirmation prompt) ----------------------------------
-def close_summary(app: MonayApp, a: dict) -> str:
+def close_summary(app: MonayApp, a: Args) -> str:
     return app.close_summary()
 
 
-def _del_summary(noun: str):
-    def summary(app: MonayApp, a: dict) -> str:
+def _del_summary(noun: str) -> SummaryFn:
+    def summary(app: MonayApp, a: Args) -> str:
         target = a.get("name") or a.get("index")
         return f"Delete {noun} {target}?"
 

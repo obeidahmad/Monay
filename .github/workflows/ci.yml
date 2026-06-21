@@ -1,7 +1,7 @@
 name: ci
 
-# The HARD merge gate: lint + format + tests must pass on every PR and on every
-# push to main. build.yml stays separate — it only runs on version
+# The HARD merge gate: lint + format + type check + tests must pass on every PR
+# and on every push to main. build.yml stays separate — it only runs on version
 # tags to cut binary releases.
 on:
   pull_request:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   check:
-    name: lint + format + tests
+    name: lint + format + type check + tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +31,9 @@ jobs:
 
       - name: Ruff format check
         run: uv run ruff format --check
+
+      - name: Type check
+        run: uv run mypy
 
       - name: Tests
         run: uv run pytest

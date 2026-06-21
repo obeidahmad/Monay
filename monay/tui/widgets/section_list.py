@@ -14,13 +14,14 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
-from monay.domain.entities import AllocKind, SectionKind
+from monay.domain.entities import AllocKind, Section, SectionKind
 from monay.domain.money import Money
+from monay.domain.month import Month
 from monay.tui import theme
 from monay.tui.format import money_str, signed
 
 
-def build(month, currency: str = "€") -> RenderableType:
+def build(month: Month, currency: str = "€") -> RenderableType:
     sections = sorted(month.sections, key=lambda s: s.position)
 
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)
@@ -43,13 +44,15 @@ def build(month, currency: str = "€") -> RenderableType:
     return Group(table, _summary(month, sections))
 
 
-def _kind_label(s) -> str:
+def _kind_label(s: Section) -> str:
     if s.alloc_kind is AllocKind.PCT:
+        assert s.percentage is not None
         return f"{s.kind.value} · {s.percentage.value}%"
+    assert s.amount is not None
     return f"{s.kind.value} · {money_str(s.amount)}"
 
 
-def _summary(month, sections) -> Text:
+def _summary(month: Month, sections: list[Section]) -> Text:
     pre_total = sum(
         (s.available for s in sections if s.kind is SectionKind.PRE), Money.zero()
     )

@@ -10,11 +10,21 @@ from __future__ import annotations
 
 import re
 import shlex
+from typing import Any
 
 from monay.app.errors import BadUsageError, UnknownCommandError
 from monay.domain.expressions import evaluate
 
-from .registry import AMOUNT, CHOICE, DAY, INT, CommandRegistry, CommandSpec
+from .registry import (
+    AMOUNT,
+    CHOICE,
+    DAY,
+    INT,
+    Arg,
+    Args,
+    CommandRegistry,
+    CommandSpec,
+)
 
 _DAY_RE = re.compile(r"^d(\d+)$", re.IGNORECASE)
 
@@ -26,7 +36,7 @@ def tokenize(text: str) -> list[str]:
         raise BadUsageError(f"could not parse the command ({exc})") from exc
 
 
-def parse(registry: CommandRegistry, text: str) -> tuple[CommandSpec, dict]:
+def parse(registry: CommandRegistry, text: str) -> tuple[CommandSpec, Args]:
     tokens = tokenize(text)
     if not tokens:
         raise BadUsageError("type a command — try: help")
@@ -47,9 +57,9 @@ def parse(registry: CommandRegistry, text: str) -> tuple[CommandSpec, dict]:
     return spec, _bind(spec, rest)
 
 
-def _bind(spec: CommandSpec, tokens: list[str]) -> dict:
+def _bind(spec: CommandSpec, tokens: list[str]) -> Args:
     tokens = list(tokens)
-    values: dict = {}
+    values: Args = {}
 
     day_arg = next((a for a in spec.args if a.kind == DAY), None)
     if day_arg is not None:
@@ -81,7 +91,7 @@ def _bind(spec: CommandSpec, tokens: list[str]) -> dict:
     return values
 
 
-def _convert(arg, token: str, spec: CommandSpec):
+def _convert(arg: Arg, token: str, spec: CommandSpec) -> Any:
     if arg.kind == AMOUNT:
         return evaluate(token)  # -> Money (ExpressionError if malformed)
     if arg.kind == INT:

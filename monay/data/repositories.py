@@ -7,6 +7,9 @@ the Unit of Work hands them. ``MonthRepository.get`` returns a recomputed month;
 
 from __future__ import annotations
 
+from typing import Any
+
+import sqlalchemy as sa
 from sqlalchemy import select, update
 
 from monay.domain.entities import Profile
@@ -14,12 +17,18 @@ from monay.domain.errors import MonthClosedError
 from monay.domain.month import Month, MonthState
 from monay.domain.values import MonthKey
 
-from .mappers import delete_profile, insert_month, load_month, update_month
+from .mappers import (
+    delete_profile,
+    insert_month,
+    inserted_id,
+    load_month,
+    update_month,
+)
 from .schema import months, profiles
 
 
 class SqlAlchemyMonthRepository:
-    def __init__(self, conn) -> None:
+    def __init__(self, conn: sa.Connection) -> None:
         self._conn = conn
 
     def get(self, profile_id: int, key: MonthKey) -> Month | None:
@@ -50,25 +59,27 @@ class SqlAlchemyMonthRepository:
 
 
 class SqlAlchemyProfileRepository:
-    def __init__(self, conn) -> None:
+    def __init__(self, conn: sa.Connection) -> None:
         self._conn = conn
 
     def get(self, profile_id: int) -> Profile | None:
         row = conn_one(self._conn, select(profiles).where(profiles.c.id == profile_id))
-        return _to_profile(row)
+        return _to_profile(row) if row is not None else None
 
     def by_name(self, name: str) -> Profile | None:
         row = conn_one(self._conn, select(profiles).where(profiles.c.name == name))
-        return _to_profile(row)
+        return _to_profile(row) if row is not None else None
 
     def add(self, profile: Profile) -> Profile:
-        profile.id = self._conn.execute(
-            profiles.insert().values(
-                name=profile.name,
-                currency_symbol=profile.currency_symbol,
-                created_at=profile.created_at,
+        profile.id = inserted_id(
+            self._conn.execute(
+                profiles.insert().values(
+                    name=profile.name,
+                    currency_symbol=profile.currency_symbol,
+                    created_at=profile.created_at,
+                )
             )
-        ).inserted_primary_key[0]
+        )
         return profile
 
     def update(self, profile: Profile) -> None:
@@ -86,13 +97,11 @@ class SqlAlchemyProfileRepository:
         delete_profile(self._conn, profile_id)
 
 
-def conn_one(conn, stmt):
+def conn_one(conn: sa.Connection, stmt: sa.Select[Any]) -> sa.Row[Any] | None:
     return conn.execute(stmt).one_or_none()
 
 
-def _to_profile(row) -> Profile | None:
-    if row is None:
-        return None
+def _to_profile(row: sa.Row[Any]) -> Profile:
     return Profile(
         name=row.name,
         currency_symbol=row.currency_symbol,
