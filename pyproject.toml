@@ -25,6 +25,7 @@ dev = [
     "pytest>=9",
     "openpyxl>=3.1", # only for the throwaway legacy_excel/ inspection scripts; app never imports Excel
     "ruff>=0.9",
+    "mypy>=1.18",
 ]
 
 # Not a distributable package (yet): uv just manages the environment.
@@ -66,3 +67,14 @@ select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # Tests favor readability over import hygiene; allow unused fixtures/imports.
 "tests/**" = ["F401", "F811"]
+
+# mypy: strict from day one. The tree was annotated as it was written, so the
+# strictest setting was the cheap choice — turning it on now keeps the codebase
+# honest rather than letting `Any` creep in to be ratcheted out later.
+# Scope is the monay/ package; the generated _version.py is excluded. tests/ are
+# not type-checked yet (the next ratchet) — strict fixtures buy little safety.
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["monay"]
+exclude = ["monay/_version\\.py"]
