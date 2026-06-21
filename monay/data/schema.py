@@ -8,25 +8,28 @@ CONSUMED/AVAILABLE/REST/counters are always recomputed from inputs on load.
 
 from __future__ import annotations
 
+from typing import Any
+
 import sqlalchemy as sa
+from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 
 from monay.domain.money import Money
 
 
-class MoneyType(TypeDecorator):
+class MoneyType(TypeDecorator[Money]):
     """Persists ``Money`` as a 4dp decimal string (TEXT); reads back ``Money``."""
 
     impl = sa.String
     cache_ok = True
 
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value: Money | None, dialect: Dialect) -> str | None:
         if value is None:
             return None
         m = value if isinstance(value, Money) else Money(value)
         return str(m.amount)
 
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value: Any, dialect: Dialect) -> Money | None:
         return None if value is None else Money(value)
 
 

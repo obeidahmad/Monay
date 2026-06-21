@@ -6,10 +6,12 @@ bundled by PyInstaller's ``collect_submodules``; ``version`` keeps the ordering.
 
 from __future__ import annotations
 
+import sqlalchemy as sa
+
 from ..schema import metadata
 
 version = 1
 
 
-def upgrade(conn) -> None:
+def upgrade(conn: sa.Connection) -> None:
     metadata.create_all(conn)

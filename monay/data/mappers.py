@@ -7,6 +7,9 @@ the object graph and rewires transactions/transfers to their field objects.
 
 from __future__ import annotations
 
+from typing import Any
+
+import sqlalchemy as sa
 from sqlalchemy import delete, select, update
 
 from monay.domain.entities import (
@@ -37,16 +40,28 @@ from .schema import (
 
 
 # --- save -----------------------------------------------------------------
-def insert_month(conn, month: Month) -> None:
-    month.id = conn.execute(
-        months.insert().values(
-            profile_id=month.profile_id, key=str(month.key), state=month.state.value
+def inserted_id(result: sa.CursorResult[Any]) -> int:
+    """The integer primary key produced by a single-row INSERT."""
+    pk = result.inserted_primary_key
+    assert pk is not None
+    return int(pk[0])
+
+
+def insert_month(conn: sa.Connection, month: Month) -> None:
+    month.id = inserted_id(
+        conn.execute(
+            months.insert().values(
+                profile_id=month.profile_id,
+                key=str(month.key),
+                state=month.state.value,
+            )
         )
-    ).inserted_primary_key[0]
+    )
     _insert_children(conn, month.id, month)
 
 
-def update_month(conn, month: Month) -> None:
+def update_month(conn: sa.Connection, month: Month) -> None:
+    assert month.id is not None  # an existing month always carries its row id
     _delete_children(conn, month.id)
     conn.execute(
         update(months)
@@ -58,7 +73,7 @@ def update_month(conn, month: Month) -> None:
     _insert_children(conn, month.id, month)
 
 
-def _delete_children(conn, month_id: int) -> None:
+def _delete_children(conn: sa.Connection, month_id: int) -> None:
     conn.execute(delete(transactions).where(transactions.c.month_id == month_id))
     conn.execute(delete(transfers).where(transfers.c.month_id == month_id))
     section_ids = select(sections.c.id).where(sections.c.month_id == month_id)
@@ -68,47 +83,53 @@ def _delete_children(conn, month_id: int) -> None:
     conn.execute(delete(pockets).where(pockets.c.month_id == month_id))
 
 
-def _insert_children(conn, month_id: int, month: Month) -> None:
+def _insert_children(conn: sa.Connection, month_id: int, month: Month) -> None:
     pocket_ids: dict[str, int] = {}
     for p in sorted(month.pockets, key=lambda p: p.position):
-        p.id = conn.execute(
-            pockets.insert().values(
-                month_id=month_id,
-                name=p.name,
-                is_default=p.is_default,
-                position=p.position,
+        p.id = inserted_id(
+            conn.execute(
+                pockets.insert().values(
+                    month_id=month_id,
+                    name=p.name,
+                    is_default=p.is_default,
+                    position=p.position,
+                )
             )
-        ).inserted_primary_key[0]
+        )
         pocket_ids[p.name] = p.id
 
     field_db_id: dict[int, int] = {}  # id(field_obj) -> db id (for tx/transfer wiring)
     for s in sorted(month.sections, key=lambda s: s.position):
-        s.id = conn.execute(
-            sections.insert().values(
-                month_id=month_id,
-                name=s.name,
-                kind=s.kind.value,
-                position=s.position,
-                alloc_kind=s.alloc_kind.value,
-                alloc_value=_alloc_value(s),
-                rest_routing=s.rest_routing.kind.value,
-                rest_target=s.rest_routing.target,
-                carried_rest=s.carried_rest,
-            )
-        ).inserted_primary_key[0]
-        for f in sorted(s.fields, key=lambda f: f.position):
-            f.id = conn.execute(
-                fields.insert().values(
-                    section_id=s.id,
-                    name=f.name,
-                    budget=f.budget,
-                    current=f.current,
-                    cap_kind="inf" if f.cap.is_infinite else "finite",
-                    cap_value=None if f.cap.is_infinite else f.cap.limit,
-                    pocket_id=pocket_ids[f.pocket.name],
-                    position=f.position,
+        s.id = inserted_id(
+            conn.execute(
+                sections.insert().values(
+                    month_id=month_id,
+                    name=s.name,
+                    kind=s.kind.value,
+                    position=s.position,
+                    alloc_kind=s.alloc_kind.value,
+                    alloc_value=_alloc_value(s),
+                    rest_routing=s.rest_routing.kind.value,
+                    rest_target=s.rest_routing.target,
+                    carried_rest=s.carried_rest,
                 )
-            ).inserted_primary_key[0]
+            )
+        )
+        for f in sorted(s.fields, key=lambda f: f.position):
+            f.id = inserted_id(
+                conn.execute(
+                    fields.insert().values(
+                        section_id=s.id,
+                        name=f.name,
+                        budget=f.budget,
+                        current=f.current,
+                        cap_kind="inf" if f.cap.is_infinite else "finite",
+                        cap_value=None if f.cap.is_infinite else f.cap.limit,
+                        pocket_id=pocket_ids[f.pocket.name],
+                        position=f.position,
+                    )
+                )
+            )
             field_db_id[id(f)] = f.id
 
     for inc in month.incomes:
@@ -147,12 +168,15 @@ def _insert_children(conn, month_id: int, month: Month) -> None:
 
 
 def _alloc_value(section: Section) -> str:
+    # alloc_kind pins which of percentage/amount is set (Section's invariant).
     if section.alloc_kind is AllocKind.PCT:
+        assert section.percentage is not None
         return str(section.percentage.value)
+    assert section.amount is not None
     return str(section.amount.amount)
 
 
-def delete_profile(conn, profile_id: int) -> None:
+def delete_profile(conn: sa.Connection, profile_id: int) -> None:
     """Cascade-delete a profile and all of its months + their children."""
     month_ids = [
         r.id
@@ -167,7 +191,7 @@ def delete_profile(conn, profile_id: int) -> None:
 
 
 # --- load -----------------------------------------------------------------
-def load_month(conn, profile_id: int, key: MonthKey) -> Month | None:
+def load_month(conn: sa.Connection, profile_id: int, key: MonthKey) -> Month | None:
     row = conn.execute(
         select(months).where(
             months.c.profile_id == profile_id, months.c.key == str(key)

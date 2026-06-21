@@ -9,6 +9,19 @@ a frozen binary. To add a migration: ``from . import mNNNN_x`` and append it to
 
 from __future__ import annotations
 
+from typing import Protocol
+
+import sqlalchemy as sa
+
 from . import m0001_initial
 
-ALL = [m0001_initial]
+
+class Migration(Protocol):
+    """The structural contract each migration module satisfies."""
+
+    version: int
+
+    def upgrade(self, conn: sa.Connection) -> None: ...
+
+
+ALL: list[Migration] = [m0001_initial]
