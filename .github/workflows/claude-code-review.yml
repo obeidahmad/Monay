@@ -38,18 +38,11 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          # Post a single tracking comment that always shows the review ran and
-          # carries the summary + docs advisory. Without this, the code-review
-          # plugin only emits inline comments and stays completely silent on a
-          # clean PR — and the advisory below would never surface.
-          track_progress: true
-          prompt: |
-            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
-
-            After the review above, add one advisory note (non-blocking): does this
-            change need documentation updates? If it alters user-facing behaviour, a
-            command, or a flag, check that docs/, the README, --help text, or
-            CONTRIBUTING were updated to match. If they weren't, say so.
+          # Inline-only review: the code-review plugin posts its findings as
+          # inline comments anchored to the relevant lines. We deliberately do
+          # NOT set track_progress — tag mode would force every finding into one
+          # summary comment instead of onto the line it's about.
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
