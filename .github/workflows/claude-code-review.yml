@@ -38,6 +38,11 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
+          # Post a single tracking comment that always shows the review ran and
+          # carries the summary + docs advisory. Without this, the code-review
+          # plugin only emits inline comments and stays completely silent on a
+          # clean PR — and the advisory below would never surface.
+          track_progress: true
           prompt: |
             /code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
 
