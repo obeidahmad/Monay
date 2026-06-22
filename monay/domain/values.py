@@ -46,7 +46,7 @@ class Cap:
 
     def clamp(self, value: Money) -> Money:
         """``min(value, limit)``; returns ``value`` unchanged when infinite."""
-        if self.limit is None or value <= self.limit:
+        if self.limit is None or value >= self.limit:
             return value
         return self.limit
 
