@@ -194,8 +194,9 @@ tests/         unit + engine + adapter + headless-TUI tests
 docs/          DEVELOPING (code guide) · PLAN (roadmap)
 ```
 
-Contributors: see **[docs/DEVELOPING.md](docs/DEVELOPING.md)** for how the code
-is organized, and **[docs/PLAN.md](docs/PLAN.md)** for what's next.
+Contributors: see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the development
+loop, **[docs/DEVELOPING.md](docs/DEVELOPING.md)** for how the code is organized,
+and **[docs/PLAN.md](docs/PLAN.md)** for what's next.
 
 ## 📜 License
 
