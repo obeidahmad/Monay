@@ -10,14 +10,14 @@ no float ever touches a value (floats are rejected outright).
 from __future__ import annotations
 
 import functools
-from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Final
 
 from .errors import ValidationError
 
 FOUR_PLACES: Final = Decimal("0.0001")
 TWO_PLACES: Final = Decimal("0.01")
-ROUNDING: Final = ROUND_HALF_EVEN
+ROUNDING: Final = ROUND_HALF_UP
 
 # Raw inputs accepted by Money(...) — plus Money itself (passed through).
 Numeric = int | str | Decimal
