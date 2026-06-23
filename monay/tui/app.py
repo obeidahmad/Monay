@@ -12,6 +12,7 @@ from __future__ import annotations
 from rich.console import RenderableType
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.containers import VerticalScroll
 from textual.widgets import Input, Static, Tab, Tabs
 
 from monay.app.commands import CommandRegistry, Result
@@ -35,7 +36,8 @@ class Monay(App[None]):
         height: 1; background: {theme.PANEL}; color: {theme.TEXT}; padding: 0 1;
     }}
     Tabs {{ background: {theme.TABS_BG}; }}
-    #content {{ height: 1fr; padding: 1 2; color: {theme.TEXT}; }}
+    #content-scroll {{ height: 1fr; }}
+    #content {{ height: auto; padding: 1 2; color: {theme.TEXT}; }}
     #feedback {{ height: 1; padding: 0 1; color: {theme.OK}; }}
     #feedback.error {{ color: {theme.ERROR}; }}
     #feedback.confirm {{ color: {theme.WARN}; }}
@@ -58,7 +60,8 @@ class Monay(App[None]):
     def compose(self) -> ComposeResult:
         yield Static(id="context")
         yield Tabs(*(Tab(t.title(), id=t) for t in _TABS), id="tabs")
-        yield Static(id="content")
+        with VerticalScroll(id="content-scroll"):
+            yield Static(id="content")
         yield Static(id="feedback")
         yield CommandBar(id="command")
 
@@ -105,6 +108,7 @@ class Monay(App[None]):
         if event.tab is not None and event.tab.id is not None:
             self._service.tab = event.tab.id
             self.query_one("#content", Static).update(self._content_renderable())
+            self.query_one("#content-scroll", VerticalScroll).scroll_home(animate=False)
 
     def _refresh(self) -> None:
         self.last_context = self._context_text()
