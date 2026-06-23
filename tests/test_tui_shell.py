@@ -7,6 +7,7 @@ import asyncio
 from datetime import date
 
 from dependency_injector import providers
+from textual.containers import VerticalScroll
 
 from monay.bootstrap import build_container
 from monay.domain.money import Money
@@ -65,3 +66,31 @@ async def _scenario() -> None:
 
 def test_shell_command_loop():
     asyncio.run(_scenario())
+
+
+async def _overflow_scenario() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+
+    async with app.run_test() as pilot:  # default 80x24 virtual terminal
+        for cmd in (
+            "profile add Demo",
+            "section add post Need 100%",
+            "field add Need Food 300 400",
+            "income add Pay 1000",
+        ):
+            await _type(pilot, app, cmd)
+        # add many more transactions than fit in 24 rows
+        for n in range(40):
+            await _type(pilot, app, f"add Food 1 item{n}")
+        await _type(pilot, app, "goto transactions")
+
+        scroll = app.query_one("#content-scroll", VerticalScroll)
+        # content is taller than the viewport, so the area can scroll to reach it
+        assert scroll.max_scroll_y > 0
+
+
+def test_overflowing_content_is_scrollable():
+    asyncio.run(_overflow_scenario())
