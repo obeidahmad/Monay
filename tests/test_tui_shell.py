@@ -91,6 +91,14 @@ async def _overflow_scenario() -> None:
         # content is taller than the viewport, so the area can scroll to reach it
         assert scroll.max_scroll_y > 0
 
+        # scroll to the bottom, then switching tabs and back resets to the top
+        scroll.scroll_end(animate=False)
+        await pilot.pause()
+        assert scroll.scroll_y > 0
+        await _type(pilot, app, "goto budget")
+        await _type(pilot, app, "goto transactions")
+        assert scroll.scroll_y == 0
+
 
 def test_overflowing_content_is_scrollable():
     asyncio.run(_overflow_scenario())
