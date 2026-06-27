@@ -71,7 +71,7 @@ sections = sa.Table(
     sa.Column("id", sa.Integer, primary_key=True),
     sa.Column("month_id", sa.Integer, sa.ForeignKey("months.id"), nullable=False),
     sa.Column("name", sa.String, nullable=False),
-    sa.Column("kind", sa.String, nullable=False),  # pre | post
+    sa.Column("kind", sa.String, nullable=False),  # tax | pre | post
     sa.Column("position", sa.Integer, nullable=False, default=0),
     sa.Column("alloc_kind", sa.String, nullable=False),  # pct | amount
     sa.Column("alloc_value", sa.String, nullable=False),  # decimal text (pct or amount)

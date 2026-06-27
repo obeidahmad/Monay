@@ -39,7 +39,7 @@ the next month is created for you automatically.
 
 ## ✨ Features
 
-- **Zero-based by design** — every dollar of income gets a job: pre-sections come off the top, post-sections split the rest and must sum to 100%. Define your own pre/post sections and fields — no two budgets look alike.
+- **Zero-based by design** — every dollar of income gets a job: tax-sections skim a % off fresh income first, pre-sections come off the top, post-sections split the rest and must sum to 100%. Define your own tax/pre/post sections and fields — no two budgets look alike.
 - **Envelope rollover** — close a month and unspent budget rolls forward into each field's envelope (its pot), capped at a per-field max (finite or ∞); section leftovers route to next month's income, back into themselves, or into another section.
 - **Pockets** — per-account "how much should I have here right now?" counters, so you can reconcile against reality.
 - **Borrowing, modeled honestly** — fields and sections can go negative (red) and heal over future months; supports one-time "advance" budgets.
@@ -84,8 +84,10 @@ A quick mental model — five ideas:
 
 - **Income** enters the month as one or more named entries.
 - **Sections** each receive a slice of income, called **AVAILABLE**:
-  - **Pre-sections** are taken off the top, in order — a fixed amount or a % of
-    what income remains (e.g. rent, savings, charity).
+  - **Tax-sections** come off the very top — a % of *fresh* income only
+    (leftovers carried from last month were already taxed, so they're excluded).
+  - **Pre-sections** are taken off the top next, in order — a fixed amount or a %
+    of what income remains (e.g. rent, savings, charity).
   - **Post-sections** split whatever's left by percentage; their percentages
     must sum to **100%** (e.g. Needs 50 / Wants 30 / Savings 20).
 - **Fields** are the budget lines inside a section. Each has a **BUDGET** (what
@@ -117,6 +119,7 @@ spaces (`"Emergency Fund"`); amounts accept arithmetic.
 profile add alex                  # create + select a profile (auto-creates the month + a Main pocket)
 income add Salary 2000            # add income (have as many entries as you like)
 
+section add tax  Income-Tax 1.5%  # tax-section: a % of fresh income, off the very top
 section add pre  Bills 500        # pre-section: a fixed amount off the top (or a %)
 section add post Needs 50%        # post-sections split the remainder; must sum to 100%
 section add post Wants 30%
@@ -156,7 +159,7 @@ read-only in **History** (`month 2025-01` to view, `month` to return).
 | `add <field> <amount> [d<day>] [desc…]` | Record a transaction |
 | `transfer <amount> <from> <to> [d<day>] [note…]` | Move pot money between fields |
 | `tx [filter]` · `tx edit <#> <attr> <val>` · `tx del <#>` | View / edit / delete transactions |
-| `section add pre\|post <name> <pct%\|amount>` | Create a section |
+| `section add tax\|pre\|post <name> <pct%\|amount>` | Create a section (`tax`/`post` are %-only) |
 | `section set <name> pct\|amount\|name\|rest <value>` | Edit a section (`rest` = `income`/`self`/`<section>`) |
 | `section order <name> <pos>` · `section del <name>` | Reorder / delete a section |
 | `field add <section> <name> [budget] [max\|inf]` | Create a field |

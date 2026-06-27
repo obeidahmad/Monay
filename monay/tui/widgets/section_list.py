@@ -53,10 +53,13 @@ def _kind_label(s: Section) -> str:
 
 
 def _summary(month: Month, sections: list[Section]) -> Text:
+    tax_total = sum(
+        (s.available for s in sections if s.kind is SectionKind.TAX), Money.zero()
+    )
     pre_total = sum(
         (s.available for s in sections if s.kind is SectionKind.PRE), Money.zero()
     )
-    post_pool = month.total_income - pre_total
+    post_pool = month.total_income - tax_total - pre_total
     pct_total = sum(
         (
             s.percentage.value

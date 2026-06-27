@@ -19,6 +19,7 @@ from .values import Cap, Day, Percentage, RestRouting
 
 
 class SectionKind(StrEnum):
+    TAX = "tax"
     PRE = "pre"
     POST = "post"
 
@@ -86,9 +87,11 @@ class Field:
 class Section:
     """A named group of fields receiving a slice (AVAILABLE) of the month's income.
 
-    PRE sections take a fixed amount or % of remaining income off the top, in
-    order; POST sections split what remains by percentage (must sum to 100%).
-    ``carried_rest`` is REST routed into this section when last month closed.
+    TAX sections take a % of *fresh* income (everything but leftovers) off the
+    top, before anything else; PRE sections then take a fixed amount or % of
+    remaining income off the top, in order; POST sections split what remains by
+    percentage (must sum to 100%). ``carried_rest`` is REST routed into this
+    section when last month closed.
     """
 
     name: str
@@ -116,8 +119,13 @@ class Section:
             raise ValidationError(
                 f"section {self.name!r} allocates a fixed amount, needs one"
             )
-        if self.kind is SectionKind.POST and self.alloc_kind is not AllocKind.PCT:
-            raise ValidationError("post-budgeting sections must allocate by percentage")
+        if (
+            self.kind in (SectionKind.POST, SectionKind.TAX)
+            and self.alloc_kind is not AllocKind.PCT
+        ):
+            raise ValidationError(
+                f"{self.kind.value}-budgeting sections must allocate by percentage"
+            )
 
 
 @dataclass

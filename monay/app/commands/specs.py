@@ -83,11 +83,11 @@ SPECS: list[CommandSpec] = [
     CommandSpec(
         ("section", "add"),
         (
-            Arg("kind", CHOICE, choices=("pre", "post")),
+            Arg("kind", CHOICE, choices=("tax", "pre", "post")),
             Arg("name", WORD),
             Arg("alloc", WORD),
         ),
-        "Create a section (pre: %% or fixed amount; post: %%).",
+        "Create a section (tax: %% of fresh income; pre: %% or amount; post: %%).",
         h.h_section_add,
     ),
     CommandSpec(
