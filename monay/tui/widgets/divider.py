@@ -35,6 +35,7 @@ class PaneDivider(Static):
     def on_mouse_move(self, event: events.MouseMove) -> None:
         if self._dragging and event.delta_x:
             self.post_message(self.Dragged(event.delta_x))
+            event.stop()
 
     def on_mouse_up(self, event: events.MouseUp) -> None:
         self._dragging = False

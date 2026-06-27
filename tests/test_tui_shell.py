@@ -139,6 +139,11 @@ async def _help_scenario() -> None:
         assert service.docs_query == "pocket"
         assert "transfer" not in render_text(app._helper_renderable())
 
+        # navigating to Docs clears the filter and shows the full reference again
+        await _type(pilot, app, "goto docs")
+        assert service.docs_query is None
+        assert "transfer" in render_text(app._helper_renderable())
+
         # an unknown query is a one-line error, not a tab switch
         await _type(pilot, app, "help nope")
         assert app.last_status == "error"

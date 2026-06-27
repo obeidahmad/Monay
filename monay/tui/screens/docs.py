@@ -18,6 +18,9 @@ from monay.tui import theme
 
 def render_docs(specs: list[CommandSpec], query: str | None = None) -> RenderableType:
     if query:
+        # Match on the full name ("section add"), so a query can target a
+        # sub-command; the group header below is still just the top-level verb
+        # (e.g. query "section a" matches "section add" but groups under "section").
         specs = [s for s in specs if s.name.startswith(query)]
         if not specs:
             return Text(f"No command matching {query!r}.", style="dim")

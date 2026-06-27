@@ -398,6 +398,8 @@ class MonayApp:
         if tab in ("docs", "history"):
             self.helper_tab = tab
             self.helpers_visible = True
+            if tab == "docs":
+                self.docs_query = None  # navigating to Docs shows the full reference
         else:
             self.tab = tab
 

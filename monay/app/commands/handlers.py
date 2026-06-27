@@ -251,6 +251,10 @@ def h_help(app: MonayApp, a: Args) -> Result:
     line). An optional argument filters the Docs view to matching commands."""
     from .specs import REGISTRY
 
+    # NOTE: validates against the module-level REGISTRY singleton, while the TUI
+    # renders the Docs tab from its injected registry (`self._commands.specs()`).
+    # Both are built from the same SPECS in production, so they match; a test that
+    # injects a different registry would be the only way they could diverge.
     query = (a["command"] or "").strip().lower() or None
     if query and not any(s.name.startswith(query) for s in REGISTRY.specs()):
         return Result.error(f"no command matching {query!r}")

@@ -35,6 +35,13 @@ _HELPER_TABS = ("docs", "history")  # right pane
 
 
 class Monay(App[None]):
+    # Helper pane width (cells) and the minimum widths the resize keeps free.
+    # HELPER_WIDTH is the single source of the starting split (used in CSS below
+    # and as the initial _helper_width), so the two can't drift.
+    HELPER_WIDTH = 40
+    MIN_HELPER = 24
+    MIN_WORKING = 30
+
     CSS = f"""
     Screen {{ background: {theme.BG}; }}
     #context {{
@@ -43,7 +50,7 @@ class Monay(App[None]):
     Tabs {{ background: {theme.TABS_BG}; }}
     #panes {{ height: 1fr; }}
     #left-pane {{ width: 1fr; }}
-    #right-pane {{ width: 40; }}
+    #right-pane {{ width: {HELPER_WIDTH}; }}
     #right-pane.hidden, #divider.hidden {{ display: none; }}
     #divider {{ width: 1; height: 1fr; background: {theme.PANEL}; }}
     #divider:hover {{ background: {theme.INFO}; }}
@@ -64,16 +71,12 @@ class Monay(App[None]):
         Binding("ctrl+right", "resize_helper(-2)", "Narrower helpers", priority=True),
     ]
 
-    # Helper pane width (cells) and the minimum widths the resize keeps free.
-    MIN_HELPER = 24
-    MIN_WORKING = 30
-
     def __init__(self, service: MonayApp, registry: CommandRegistry) -> None:
         super().__init__()
         self._service = service
         self._commands = registry
         self._pending: str | None = None
-        self._helper_width: int = 40  # right-pane width in cells (resizable)
+        self._helper_width: int = self.HELPER_WIDTH  # right-pane width (resizable)
         # last rendered text (handy for tests / introspection)
         self.last_feedback: str = ""
         self.last_status: str = ""
