@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from monay.app.errors import BadUsageError, NoProfileError
 from monay.domain.closing import MonthCloser
-from monay.domain.entities import Income, Profile, Transaction
+from monay.domain.entities import INCOME_SECTION_NAME, Income, Profile, Transaction
 from monay.domain.errors import DuplicateNameError, NotFoundError
 from monay.domain.money import Money, Numeric
 from monay.domain.month import Month, MonthState
@@ -413,6 +413,12 @@ class MonayApp:
         self.tab = "transactions"
 
     def open_section(self, name: str) -> None:
+        # 'income' drills into the synthetic income pseudo-section, which is not a
+        # real Section — skip the existence check (the TUI renders it directly)
+        # and store the canonical name regardless of the case the user typed.
+        if name.lower() == INCOME_SECTION_NAME:
+            self.drilled_section = INCOME_SECTION_NAME
+            return
         with self._uow_factory() as uow:
             self._load_active(uow).section(name)  # raises NotFoundError if missing
         self.drilled_section = name

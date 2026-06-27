@@ -13,6 +13,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from .entities import (
+    INCOME_SECTION_NAME,
     AllocKind,
     Field,
     Income,
@@ -420,6 +421,7 @@ class Month:
         position: int | None = None,
     ) -> Section:
         self._require_open()
+        self._reject_reserved_name(name)
         if any(s.name == name for s in self.sections):
             raise DuplicateNameError(f"a section named {name!r} already exists")
         kind = SectionKind(kind)
@@ -461,6 +463,7 @@ class Month:
         self._require_open()
         s = self.section(name)
         if new_name is not None and new_name != name:
+            self._reject_reserved_name(new_name)
             if any(o.name == new_name for o in self.sections):
                 raise DuplicateNameError(f"a section named {new_name!r} already exists")
             s.name = new_name
@@ -575,6 +578,15 @@ class Month:
         if self.is_closed:
             raise MonthClosedError(
                 f"month {self.key} is closed; make corrections in the open month"
+            )
+
+    @staticmethod
+    def _reject_reserved_name(name: str) -> None:
+        # 'income' names the synthetic pseudo-section the Budget tab shows above
+        # the real sections; a real section by that name would shadow it.
+        if name.lower() == INCOME_SECTION_NAME:
+            raise ValidationError(
+                f"{name!r} is reserved for the income summary; pick another name"
             )
 
     def _post_percentage_total(self) -> Decimal | None:

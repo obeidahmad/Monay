@@ -68,7 +68,7 @@ monay/
     theme.py         palette / section accents / column colors
     format.py        money formatting helpers
     screens/         budget · transactions · pockets · settings · docs · history
-    widgets/         section_list · section_detail · divider (draggable split)
+    widgets/         section_list · section_detail · income_detail · divider
 ```
 
 ---
@@ -119,6 +119,12 @@ CONSUMED = LEFT − CURRENT + PAID                  (what it took from the secti
 **FRESH INCOME** = Σ income that is not a leftover (`IncomeKind.LEFTOVER`).
 Leftovers were already taxed when they first arrived last month, so they are
 excluded from the tax base; `total_income` still includes them.
+
+On the Budget tab, income is shown as a synthetic **income pseudo-section** — a
+distinct row above the real sections carrying `total_income`, drillable via
+`open income` to list the individual entries. It is not a real `Section` (the
+name `income` is reserved, so no section can shadow it); it just renders income
+on the same tab whether or not any section exists yet.
 
 Per **section**:
 

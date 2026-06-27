@@ -32,6 +32,11 @@ SECTION_PALETTE = (
     "#e06c75",  # red
 )
 
+# The synthetic income pseudo-section's accent. A lavender that appears nowhere
+# in SECTION_PALETTE / the feedback colors / COLUMN_COLORS, so the income row
+# stays distinct from every real section (even past the palette's 8th).
+INCOME_ACCENT = "#c0a0ff"  # lavender
+
 # Fixed per-column colors (Budget tab).
 COLUMN_COLORS = {
     "budget": "#56b6c2",  # cyan
