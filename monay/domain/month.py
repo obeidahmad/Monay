@@ -65,6 +65,7 @@ class Month:
         self.transfers: list[Transfer] = []
         # computed
         self.total_income: Money = Money.zero()
+        self.fresh_income: Money = Money.zero()
         self.warnings: list[str] = []
 
     @property
@@ -78,6 +79,13 @@ class Month:
         """Refresh every computed value in place from the raw inputs."""
         self.warnings = []
         self.total_income = sum((i.amount for i in self.incomes), Money.zero())
+        # FRESH INCOME = income that has not been taxed before — i.e. everything
+        # except LEFTOVER, which was already taxed when it first arrived. It is
+        # the base TAX sections allocate against.
+        self.fresh_income = sum(
+            (i.amount for i in self.incomes if i.kind is not IncomeKind.LEFTOVER),
+            Money.zero(),
+        )
 
         self._recompute_paid()
         unallocated = self._allocate_sections()
@@ -94,6 +102,10 @@ class Month:
 
     def _allocate_sections(self) -> Money:
         """Give each section its AVAILABLE; return the unallocated income."""
+        tax = sorted(
+            (s for s in self.sections if s.kind is SectionKind.TAX),
+            key=lambda s: s.position,
+        )
         pre = sorted(
             (s for s in self.sections if s.kind is SectionKind.PRE),
             key=lambda s: s.position,
@@ -104,6 +116,15 @@ class Month:
         )
 
         remaining = self.total_income
+        for s in tax:
+            # TAX sections allocate by % off FRESH income only (leftovers were
+            # already taxed). Every TAX taxes the same fresh base — they don't
+            # compound — and the total is taken off the top before PRE/POST.
+            assert s.percentage is not None
+            share = s.percentage.of(self.fresh_income)
+            s.available = share + s.carried_rest
+            remaining = remaining - share
+
         for s in pre:
             # alloc_kind and amount/percentage are kept consistent by Section's
             # invariant, so exactly one of them is set for each branch.
@@ -448,9 +469,10 @@ class Month:
             s.alloc_kind = AllocKind.PCT
             s.amount = None
         if amount is not None:
-            if s.kind is SectionKind.POST:
+            if s.kind in (SectionKind.POST, SectionKind.TAX):
                 raise ValidationError(
-                    "post-sections allocate by percentage, not a fixed amount"
+                    f"{s.kind.value}-sections allocate by percentage, "
+                    "not a fixed amount"
                 )
             s.amount = money(amount)
             s.alloc_kind = AllocKind.AMOUNT

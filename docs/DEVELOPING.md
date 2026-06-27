@@ -116,6 +116,10 @@ LEFT     = min(CURRENT + BUDGET − PAID, MAX)      (no cap if MAX = ∞)
 CONSUMED = LEFT − CURRENT + PAID                  (what it took from the section)
 ```
 
+**FRESH INCOME** = Σ income that is not a leftover (`IncomeKind.LEFTOVER`).
+Leftovers were already taxed when they first arrived last month, so they are
+excluded from the tax base; `total_income` still includes them.
+
 Per **section**:
 
 ```
@@ -124,12 +128,15 @@ REST        = AVAILABLE − Σ CONSUMED              (can be negative)
 BUDGET LEFT = AVAILABLE − Σ field budgets         (planning indicator only)
 ```
 
-Allocation order: **pre-sections** take their share off the top, in `position`
-order (a fixed amount, or a % of the income *remaining* at that point); then
-**post-sections** split what remains by percentage (the percentages must sum to
-100%). Per **pocket**: `counter = Σ LEFT of its fields`; the default pocket also
-adds the live section RESTs and any income not given to a section. **Transfers**
-are applied last and relocate `LEFT` only — they never touch PAID/CONSUMED/REST.
+Allocation order: **tax-sections** take their share off the top first — a % of
+**fresh income** only (never of leftovers; every tax-section taxes the same fresh
+base, they don't compound); then **pre-sections** take their share off what's
+left, in `position` order (a fixed amount, or a % of the income *remaining* at
+that point); then **post-sections** split what remains by percentage (the
+percentages must sum to 100%). Per **pocket**: `counter = Σ LEFT of its fields`;
+the default pocket also adds the live section RESTs and any income not given to a
+section. **Transfers** are applied last and relocate `LEFT` only — they never
+touch PAID/CONSUMED/REST.
 
 `recompute()` also collects **warnings** (negative REST, post-% ≠ 100).
 
