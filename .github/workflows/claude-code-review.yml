@@ -38,7 +38,14 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Read,Glob,Grep"'
+          # --append-system-prompt removes the model's run-to-run discretion:
+          # without it the review sometimes consolidates everything into the
+          # summary comment and never calls create_inline_comment (e.g. #39 got
+          # 0 inline comments while #37 got 5, on identical config). The mandate
+          # below forces a per-finding inline comment every time.
+          claude_args: >-
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Read,Glob,Grep"
+            --append-system-prompt "When reviewing a pull request, post EVERY finding as an inline review comment using the create_inline_comment tool, anchored to the specific file and line. The summary/tracking comment is for the overall verdict and high-level notes only — it must never be used as a substitute for per-finding inline comments."
           # The --comment flag is what makes /code-review actually POST its
           # findings as inline PR comments (see anthropics/claude-code#26227).
           track_progress: true
