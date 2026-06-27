@@ -22,7 +22,10 @@ from .registry import (
     CommandSpec,
 )
 
-_TABS = ("budget", "transactions", "pockets", "history", "settings")
+# Working tabs (left pane) and helper tabs (right pane). ``goto`` accepts either.
+_WORKING_TABS = ("budget", "transactions", "pockets", "settings")
+_HELPER_TABS = ("docs", "history")
+_TABS = _WORKING_TABS + _HELPER_TABS
 
 SPECS: list[CommandSpec] = [
     CommandSpec(

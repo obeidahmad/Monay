@@ -247,16 +247,20 @@ def h_quit(app: MonayApp, a: Args) -> Result:
 
 # --- help (registry-generated) -------------------------------------------
 def h_help(app: MonayApp, a: Args) -> Result:
+    """Open the Docs tab (the man-style reference lives there, not the feedback
+    line). An optional argument filters the Docs view to matching commands."""
     from .specs import REGISTRY
 
-    query = (a["command"] or "").strip().lower()
-    specs = REGISTRY.specs()
-    if query:
-        specs = [s for s in specs if s.name.startswith(query)]
-        if not specs:
-            return Result.error(f"no command matching {query!r}")
-    lines = [f"{s.usage()}\n    {s.help}" for s in specs]
-    return Result.info("\n".join(lines), data=specs)
+    # NOTE: validates against the module-level REGISTRY singleton, while the TUI
+    # renders the Docs tab from its injected registry (`self._commands.specs()`).
+    # Both are built from the same SPECS in production, so they match; a test that
+    # injects a different registry would be the only way they could diverge.
+    query = (a["command"] or "").strip().lower() or None
+    if query and not any(s.name.startswith(query) for s in REGISTRY.specs()):
+        return Result.error(f"no command matching {query!r}")
+    app.show_docs(query)
+    target = f"commands matching {query!r}" if query else "the command reference"
+    return Result.info(f"showing {target} in the Docs tab →")
 
 
 # --- close summary (confirmation prompt) ----------------------------------

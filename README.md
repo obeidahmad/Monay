@@ -21,7 +21,7 @@ month-end **close** the month — unused money rolls forward, pots carry over, a
 the next month is created for you automatically.
 
 ```
- Monay  ┃ Budget ┃ Transactions │ Pockets │ History │ Settings
+ Monay  ┃ Budget ┃ Transactions │ Pockets │ Settings      Docs │ History
 ─────────────────────────────────────────────────────────────────
  January 2025   ● open                           Profile: alex
 ─────────────────────────────────────────────────────────────────
@@ -130,8 +130,13 @@ add Groceries 15.71+1.35 d5 weekly shop   # log a transaction (d5 = day 5; day d
 
 ### Navigating
 
+The screen has two panes: working tabs on the left (Budget, Transactions,
+Pockets, Settings) and helper tabs on the right (**Docs**, **History**).
+
 `open <section>` drills into a section's fields · `back` / `Esc` returns ·
-`goto <tab>` switches tab · `Tab` cycles tabs.
+`goto <tab>` switches tab (either pane) · `Tab` cycles tabs · `Ctrl+B` toggles
+the helper pane · drag the divider between the panes, or `Ctrl+←`/`Ctrl+→`, to
+resize it (the keyboard shortcuts are shown along the bottom of the helper pane).
 
 ### Closing a month
 
@@ -162,7 +167,8 @@ read-only in **History** (`month 2025-01` to view, `month` to return).
 | `month [<yyyy-mm>]` · `close` | View a month / close the open one |
 | `open <section>` · `back` · `goto <tab>` | Navigation |
 | `profile add\|switch\|rename\|del <name>` | Manage profiles |
-| `help [command]` · `quit` | Help / exit |
+| `help [command]` | Open the Docs tab — the full command reference (filter by command) |
+| `quit` | Exit |
 
 </details>
 

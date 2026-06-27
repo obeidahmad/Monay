@@ -6,6 +6,7 @@ from datetime import date
 from dependency_injector import providers
 from rich.console import Console
 
+from monay.app.commands.specs import REGISTRY
 from monay.app.services import MonthSummary
 from monay.bootstrap import build_container
 from monay.domain.money import Money
@@ -13,6 +14,7 @@ from monay.domain.month import MonthState
 from monay.domain.values import MonthKey
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
+from monay.tui.screens.docs import render_docs
 from monay.tui.screens.history import render_history
 from monay.tui.screens.pockets import render_pockets
 from monay.tui.screens.transactions import render_transactions
@@ -71,6 +73,24 @@ def test_history_tab():
     assert "2025-02" in text and "2025-01" in text
     assert "open" in text and "closed" in text
     assert "650.00" in text
+
+
+def test_docs_tab_lists_every_command():
+    text = render_text(render_docs(REGISTRY.specs()))
+    # the reference covers commands across the whole registry, with usage + help
+    for cmd in ("add", "transfer", "section add", "pocket main", "goto", "quit"):
+        assert cmd in text
+    assert "Record a transaction" in text  # the `add` help line, not just the usage
+    assert "add <field> <amount>" in text  # usage signature with arg markers
+
+
+def test_docs_tab_filters_by_query():
+    text = render_text(render_docs(REGISTRY.specs(), query="pocket"))
+    assert "pocket add" in text and "pocket main" in text
+    assert "transfer" not in text  # filtered out
+
+    empty = render_text(render_docs(REGISTRY.specs(), query="nope"))
+    assert "No command matching" in empty
 
 
 async def _full_loop() -> None:
