@@ -2,20 +2,20 @@
 
 # 💰 Monay
 
-**A modern terminal budget app with monthly rollover, pockets, and a flexible section model.**
+**A modern terminal app for zero-based budgeting — with monthly rollover, pockets, and a flexible section model.**
 
-Built with [Textual](https://textual.textualize.io/) · Python 3.14 · a pure, fully-tested budgeting engine.
+Built with Python 3.14 · a pure budgeting engine behind a [Textual](https://textual.textualize.io/) terminal UI.
 
 ![Python](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)
 ![Textual](https://img.shields.io/badge/TUI-Textual-5A4FCF)
-![Tests](https://img.shields.io/badge/tests-passing-3FB950)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 
 ---
 
-Monay replaces a spreadsheet budget with a fast, keyboard-driven terminal app.
+Monay brings **zero-based, envelope-style budgeting** to the terminal — give
+every dollar a job, then watch what you don't spend roll forward in its pot.
 You define your own **sections** and **fields**, log spending as you go, and at
 month-end **close** the month — unused money rolls forward, pots carry over, and
 the next month is created for you automatically.
@@ -39,8 +39,8 @@ the next month is created for you automatically.
 
 ## ✨ Features
 
-- **Dynamic structure** — define your own pre/post sections, fields, and pockets. No two budgets need look alike.
-- **Monthly rollover** — close a month and unspent budget rolls into pots (with per-field caps, finite or ∞); section leftovers route to next month's income, back into themselves, or into another section.
+- **Zero-based by design** — every dollar of income gets a job: pre-sections come off the top, post-sections split the rest and must sum to 100%. Define your own pre/post sections and fields — no two budgets look alike.
+- **Envelope rollover** — close a month and unspent budget rolls forward into each field's envelope (its pot), capped at a per-field max (finite or ∞); section leftovers route to next month's income, back into themselves, or into another section.
 - **Pockets** — per-account "how much should I have here right now?" counters, so you can reconcile against reality.
 - **Borrowing, modeled honestly** — fields and sections can go negative (red) and heal over future months; supports one-time "advance" budgets.
 - **Expressions everywhere** — type `15.71+1.35` or `(7.81)/2+6.5` for any amount.
