@@ -40,7 +40,7 @@ the next month is created for you automatically.
 ## ✨ Features
 
 - **Zero-based by design** — every dollar of income gets a job: pre-sections come off the top, post-sections split the rest and must sum to 100%. Define your own pre/post sections and fields — no two budgets look alike.
-- **Envelope rollover** — close a month and unspent budget rolls forward into each field's pot, its envelope (with per-field caps, finite or ∞); section leftovers route to next month's income, back into themselves, or into another section.
+- **Envelope rollover** — close a month and unspent budget rolls forward into each field's envelope (its pot), capped at a per-field max (finite or ∞); section leftovers route to next month's income, back into themselves, or into another section.
 - **Pockets** — per-account "how much should I have here right now?" counters, so you can reconcile against reality.
 - **Borrowing, modeled honestly** — fields and sections can go negative (red) and heal over future months; supports one-time "advance" budgets.
 - **Expressions everywhere** — type `15.71+1.35` or `(7.81)/2+6.5` for any amount.
