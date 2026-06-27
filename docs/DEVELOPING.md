@@ -63,11 +63,11 @@ monay/
     commands/        registry.py · parser.py · specs.py · handlers.py
 
   tui/
-    app.py           Monay(App): shell, tab strip, context bar, feedback, loop
+    app.py           Monay(App): shell, two-pane tabs, context bar, feedback, loop
     command_bar.py   the input widget (history, Esc-clear)
     theme.py         palette / section accents / column colors
     format.py        money formatting helpers
-    screens/         budget · transactions · pockets · history · settings
+    screens/         budget · transactions · pockets · settings · docs · history
     widgets/         section_list · section_detail
 ```
 
@@ -192,11 +192,15 @@ and autocomplete pick it up automatically.
 
 ## 7. TUI
 
-`Monay(App)` (`tui/app.py`) hosts the tab strip, the context bar (month · state
-· profile), the active-tab content, the feedback line, and the command bar. The
+`Monay(App)` (`tui/app.py`) hosts the context bar (month · state · profile), a
+two-pane body, the feedback line, and the command bar. The body has a **left
+pane** of working tabs (budget · transactions · pockets · settings) and a **right
+pane** of helper tabs (docs · history); `Ctrl+B` toggles the right pane. The
 command loop is: parse via the registry → run against `MonayApp` → render the
-result (✓ / ✗ / a typed `Yes`/`No` confirmation). Tab screens build Rich
-renderables; `format.py` + `theme.py` handle colors.
+result (✓ / ✗ / a typed `Yes`/`No` confirmation). The Docs tab (`screens/docs.py`)
+renders the man-style reference straight from `REGISTRY.specs()`, so it never
+drifts from what the app accepts; `help` selects it (`help <command>` filters it).
+Tab screens build Rich renderables; `format.py` + `theme.py` handle colors.
 
 ---
 

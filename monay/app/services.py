@@ -47,7 +47,10 @@ class MonayApp:
         self.viewing: MonthKey | None = None
         self.viewing_closed: bool = False
         # ephemeral UI state (the TUI reads these)
-        self.tab: str = "budget"
+        self.tab: str = "budget"  # active working tab (left pane)
+        self.helper_tab: str = "docs"  # active helper tab (right pane)
+        self.helpers_visible: bool = True  # is the right (helper) pane shown?
+        self.docs_query: str | None = None  # filter for the Docs tab, if any
         self.drilled_section: str | None = None
         self.tx_filter: str | None = None
         self.should_quit: bool = False
@@ -391,7 +394,17 @@ class MonayApp:
     # Navigation (UI state)
     # =====================================================================
     def goto(self, tab: str) -> None:
-        self.tab = tab
+        # Route by which pane owns the tab: helper tabs live in the right pane.
+        if tab in ("docs", "history"):
+            self.helper_tab = tab
+            self.helpers_visible = True
+        else:
+            self.tab = tab
+
+    def show_docs(self, query: str | None = None) -> None:
+        self.helper_tab = "docs"
+        self.helpers_visible = True
+        self.docs_query = query
 
     def set_tx_filter(self, text: str | None) -> None:
         self.tx_filter = text or None

@@ -7,6 +7,7 @@ import asyncio
 from datetime import date
 
 from dependency_injector import providers
+from rich.console import Console
 from textual.containers import VerticalScroll
 
 from monay.bootstrap import build_container
@@ -15,6 +16,13 @@ from monay.domain.values import MonthKey
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
 from tests.fakes import FixedClock
+
+
+def render_text(renderable) -> str:
+    console = Console(no_color=True, width=200)
+    with console.capture() as cap:
+        console.print(renderable)
+    return cap.get()
 
 
 async def _type(pilot, app, text: str) -> None:
@@ -102,3 +110,47 @@ async def _overflow_scenario() -> None:
 
 def test_overflowing_content_is_scrollable():
     asyncio.run(_overflow_scenario())
+
+
+async def _help_scenario() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+
+    async with app.run_test() as pilot:
+        right = app.query_one("#right-pane")
+
+        # `help` selects the Docs tab and keeps the feedback line to one line
+        # (the original bug dumped the multi-line reference into #feedback).
+        await _type(pilot, app, "help")
+        assert service.helper_tab == "docs"
+        assert service.helpers_visible is True
+        assert app.last_status == "info"
+        assert "\n" not in app.last_feedback
+        # the full reference renders in the right pane, unclipped
+        shown = render_text(app._helper_renderable())
+        for cmd in ("add", "transfer", "section add", "quit"):
+            assert cmd in shown
+
+        # `help <query>` filters the Docs view
+        await _type(pilot, app, "help pocket")
+        assert service.docs_query == "pocket"
+        assert "transfer" not in render_text(app._helper_renderable())
+
+        # an unknown query is a one-line error, not a tab switch
+        await _type(pilot, app, "help nope")
+        assert app.last_status == "error"
+
+        # ctrl+b toggles the right (helper) pane
+        assert not right.has_class("hidden")
+        app.action_toggle_helpers()
+        await pilot.pause()
+        assert right.has_class("hidden")
+        app.action_toggle_helpers()
+        await pilot.pause()
+        assert not right.has_class("hidden")
+
+
+def test_help_opens_docs_tab():
+    asyncio.run(_help_scenario())
