@@ -22,6 +22,10 @@ def build(month: Month, currency: str = "€") -> RenderableType:
     header = Text(f"◂ {INCOME_SECTION_NAME.upper()} · ", style=theme.INCOME_ACCENT)
     header.append(f"total {money_str(month.total_income)}")
 
+    if not month.incomes:
+        hint = Text("No income yet — income add Salary 1000", style="dim")
+        return Group(header, hint)
+
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)
     table.add_column("Source")
     table.add_column("Amount", justify="right")
@@ -34,7 +38,4 @@ def build(month: Month, currency: str = "€") -> RenderableType:
             Text(inc.kind.value),
         )
 
-    if not month.incomes:
-        hint = Text("No income yet — income add Salary 1000", style="dim")
-        return Group(header, hint)
     return Group(header, table)

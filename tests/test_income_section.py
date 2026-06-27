@@ -13,7 +13,7 @@ from dependency_injector import providers
 from rich.console import Console
 
 from monay.bootstrap import build_container
-from monay.domain.entities import Income, IncomeKind
+from monay.domain.entities import INCOME_SECTION_NAME, Income, IncomeKind
 from monay.domain.errors import ValidationError
 from monay.domain.money import Money
 from monay.domain.month import Month
@@ -88,6 +88,15 @@ def test_rename_section_to_income_is_rejected():
     m = build_sample()
     with pytest.raises(ValidationError):
         m.edit_section("Needs", new_name="income")
+
+
+def test_open_section_stores_canonical_income_name():
+    # Any casing drills into the pseudo-section and is stored canonically. The
+    # income branch returns before touching the UoW, so no profile is needed.
+    service = build_container("sqlite://").app_service()
+    for variant in ("INCOME", "Income", "income"):
+        service.open_section(variant)
+        assert service.drilled_section == INCOME_SECTION_NAME
 
 
 # --- shell flow ---------------------------------------------------------
