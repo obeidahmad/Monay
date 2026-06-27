@@ -11,6 +11,7 @@ from rich.console import Console
 from textual.containers import VerticalScroll
 
 from monay.bootstrap import build_container
+from monay.domain.entities import SectionKind
 from monay.domain.money import Money
 from monay.domain.values import MonthKey
 from monay.tui.app import Monay
@@ -75,6 +76,30 @@ async def _scenario() -> None:
 
 def test_shell_command_loop():
     asyncio.run(_scenario())
+
+
+async def _tax_section_scenario() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+
+    async with app.run_test() as pilot:
+        await _type(pilot, app, "profile add Demo")
+        await _type(pilot, app, "income add Pay 1000")
+
+        # the TAX kind parses end-to-end and creates the section
+        await _type(pilot, app, "section add tax Income-Tax 10%")
+        assert app.last_status == "ok"
+        assert service.active_month().section("Income-Tax").kind is SectionKind.TAX
+
+        # a fixed amount (no %) is rejected — a tax is %-only
+        await _type(pilot, app, "section add tax Bad 50")
+        assert app.last_status == "error"
+
+
+def test_section_add_tax_via_shell():
+    asyncio.run(_tax_section_scenario())
 
 
 async def _overflow_scenario() -> None:

@@ -7,6 +7,7 @@ from dependency_injector import providers
 from rich.console import Console
 
 from monay.bootstrap import build_container
+from monay.domain.values import Percentage
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
 from monay.tui.widgets import section_detail, section_list
@@ -33,6 +34,14 @@ def test_section_list_shows_avail_rest_and_balance():
     assert "750.00" in text  # Needs AVAILABLE
     assert "350.00" in text  # Needs REST
     assert "Σ% = 100" in text  # post percentages balance
+
+
+def test_section_list_post_pool_subtracts_tax_share():
+    m = _sample()  # income 2000, Bills (pre 500), Needs/Wants/Savings (post)
+    m.add_section("VAT", "tax", percentage=Percentage(10))  # 10% of 2000 fresh = 200
+    text = render_text(section_list.build(m))
+    assert "tax · 10%" in text  # the new kind renders its share
+    assert "post pool 1,300.00" in text  # 2000 − tax 200 − Bills 500
 
 
 def test_section_list_flags_negative_rest():
