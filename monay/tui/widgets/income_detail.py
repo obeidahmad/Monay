@@ -20,7 +20,7 @@ from monay.tui.format import money_str
 
 def build(month: Month, currency: str = "€") -> RenderableType:
     header = Text(f"◂ {INCOME_SECTION_NAME.upper()} · ", style=theme.INCOME_ACCENT)
-    header.append(Text(f"total {money_str(month.total_income)}"))
+    header.append(f"total {money_str(month.total_income)}")
 
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)
     table.add_column("Source")

@@ -414,10 +414,13 @@ class MonayApp:
 
     def open_section(self, name: str) -> None:
         # 'income' drills into the synthetic income pseudo-section, which is not a
-        # real Section — skip the existence check the TUI renders it directly.
-        if name.lower() != INCOME_SECTION_NAME:
-            with self._uow_factory() as uow:
-                self._load_active(uow).section(name)  # raises NotFoundError if missing
+        # real Section — skip the existence check (the TUI renders it directly)
+        # and store the canonical name regardless of the case the user typed.
+        if name.lower() == INCOME_SECTION_NAME:
+            self.drilled_section = INCOME_SECTION_NAME
+            return
+        with self._uow_factory() as uow:
+            self._load_active(uow).section(name)  # raises NotFoundError if missing
         self.drilled_section = name
 
     def back(self) -> None:

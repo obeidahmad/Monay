@@ -58,7 +58,7 @@ def _add_income_row(table: Table, month: Month) -> None:
     # ``open income`` drills into the per-income entries.
     table.add_row(
         Text(f"$ {INCOME_SECTION_NAME}", style=theme.INCOME_ACCENT),
-        Text("income", style="dim"),
+        Text(INCOME_SECTION_NAME, style="dim"),
         Text(money_str(month.total_income)),
         Text(""),
         Text(""),
