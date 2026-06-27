@@ -93,7 +93,7 @@ class Monay(App[None]):
                 )
                 with VerticalScroll(id="helper-scroll"):
                     yield Static(id="helper-content")
-                yield Static("drag │ · Ctrl+←/→ resize · Ctrl+B hide", id="helper-hint")
+                yield Static("Ctrl+←/→ resize · Ctrl+B hide", id="helper-hint")
         yield Static(id="feedback")
         yield CommandBar(id="command")
 
