@@ -17,6 +17,11 @@ from .errors import ValidationError
 from .money import Money
 from .values import Cap, Day, Percentage, RestRouting
 
+# Reserved name for the synthetic "income" pseudo-section the Budget tab shows
+# above the real sections (drillable via ``open income``). It is not a real
+# Section — no real section may take this name (see ``Month.add_section``).
+INCOME_SECTION_NAME = "income"
+
 
 class SectionKind(StrEnum):
     TAX = "tax"

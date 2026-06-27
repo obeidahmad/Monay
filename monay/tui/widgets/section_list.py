@@ -14,7 +14,12 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 
-from monay.domain.entities import AllocKind, Section, SectionKind
+from monay.domain.entities import (
+    INCOME_SECTION_NAME,
+    AllocKind,
+    Section,
+    SectionKind,
+)
 from monay.domain.money import Money
 from monay.domain.month import Month
 from monay.tui import theme
@@ -31,6 +36,9 @@ def build(month: Month, currency: str = "€") -> RenderableType:
     table.add_column("rest", justify="right")
     table.add_column("", width=1)  # warning chip
 
+    if month.incomes:
+        _add_income_row(table, month)
+
     for i, s in enumerate(sections):
         accent = theme.section_accent(i)
         table.add_row(
@@ -42,6 +50,20 @@ def build(month: Month, currency: str = "€") -> RenderableType:
         )
 
     return Group(table, _summary(month, sections))
+
+
+def _add_income_row(table: Table, month: Month) -> None:
+    # The income pseudo-section: total in AVAILABLE, no kind/share or REST. A
+    # distinct accent + marker and a trailing rule set it apart from sections;
+    # ``open income`` drills into the per-income entries.
+    table.add_row(
+        Text(f"$ {INCOME_SECTION_NAME}", style=theme.INCOME_ACCENT),
+        Text("income", style="dim"),
+        Text(money_str(month.total_income)),
+        Text(""),
+        Text(""),
+        end_section=True,
+    )
 
 
 def _kind_label(s: Section) -> str:

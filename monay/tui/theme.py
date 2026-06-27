@@ -32,6 +32,10 @@ SECTION_PALETTE = (
     "#e06c75",  # red
 )
 
+# The synthetic income pseudo-section's accent — deliberately outside the
+# SECTION_PALETTE so the income row reads as "not a section".
+INCOME_ACCENT = "#56b6c2"  # cyan
+
 # Fixed per-column colors (Budget tab).
 COLUMN_COLORS = {
     "budget": "#56b6c2",  # cyan
