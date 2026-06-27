@@ -48,6 +48,8 @@ def _month(*sections: Section, leftover: str = "200", fresh: str = "1000") -> Mo
         Income("Salary", money(fresh), IncomeKind.MANUAL, 0),
         Income("Leftovers", money(leftover), IncomeKind.LEFTOVER, 1),
     ]
+    # Assign sections directly (not via add_section) to keep the builder terse;
+    # the Section invariants are still enforced at construction in _section().
     m.sections = list(sections)
     m.recompute()
     return m
@@ -59,6 +61,17 @@ def test_fresh_income_excludes_leftovers():
     assert m.total_income == money("1200")
     assert m.fresh_income == money("1000")
     assert m.fresh_income < m.total_income
+
+
+def test_tax_is_zero_when_all_income_is_leftover():
+    # Nothing fresh to tax: fresh_income is 0, so the share is 0 and the section
+    # gets only its carried_rest (here zero) — no error, no phantom deduction.
+    tax = _section("Tax", SectionKind.TAX, 0, percentage=Percentage(10))
+    spend = _section("Spend", SectionKind.POST, 1, percentage=Percentage(100))
+    m = _month(tax, spend, leftover="500", fresh="0")
+    assert m.fresh_income == money("0")
+    assert m.section("Tax").available == money("0")
+    assert m.section("Spend").available == money("500")
 
 
 def test_tax_share_is_pct_of_fresh_not_total():
@@ -133,4 +146,5 @@ def test_tax_section_survives_save_and_load():
     assert loaded is not None
     tax = loaded.section("Tax")
     assert tax.kind is SectionKind.TAX
+    assert tax.percentage == Percentage(10)  # the stored input round-tripped
     assert tax.available == money("100")

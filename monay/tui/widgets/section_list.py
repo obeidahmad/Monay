@@ -53,11 +53,17 @@ def _kind_label(s: Section) -> str:
 
 
 def _summary(month: Month, sections: list[Section]) -> Text:
+    # The pool POST sections split is income minus the TAX/PRE shares taken off
+    # the top. Use the share (available − carried_rest), not available itself:
+    # carried_rest is REST routed in from last month, not a cut of this income.
+    def share(s: Section) -> Money:
+        return s.available - s.carried_rest
+
     tax_total = sum(
-        (s.available for s in sections if s.kind is SectionKind.TAX), Money.zero()
+        (share(s) for s in sections if s.kind is SectionKind.TAX), Money.zero()
     )
     pre_total = sum(
-        (s.available for s in sections if s.kind is SectionKind.PRE), Money.zero()
+        (share(s) for s in sections if s.kind is SectionKind.PRE), Money.zero()
     )
     post_pool = month.total_income - tax_total - pre_total
     pct_total = sum(

@@ -124,7 +124,7 @@ class Section:
             and self.alloc_kind is not AllocKind.PCT
         ):
             raise ValidationError(
-                f"{self.kind.value}-budgeting sections must allocate by percentage"
+                f"{self.kind.value}-sections must allocate by percentage"
             )
 
 
