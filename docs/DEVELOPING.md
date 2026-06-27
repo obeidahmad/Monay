@@ -68,7 +68,7 @@ monay/
     theme.py         palette / section accents / column colors
     format.py        money formatting helpers
     screens/         budget · transactions · pockets · settings · docs · history
-    widgets/         section_list · section_detail
+    widgets/         section_list · section_detail · divider (draggable split)
 ```
 
 ---
@@ -195,8 +195,10 @@ and autocomplete pick it up automatically.
 `Monay(App)` (`tui/app.py`) hosts the context bar (month · state · profile), a
 two-pane body, the feedback line, and the command bar. The body has a **left
 pane** of working tabs (budget · transactions · pockets · settings) and a **right
-pane** of helper tabs (docs · history); `Ctrl+B` toggles the right pane. The
-command loop is: parse via the registry → run against `MonayApp` → render the
+pane** of helper tabs (docs · history); `Ctrl+B` toggles the right pane and a
+draggable `PaneDivider` (`widgets/divider.py`) — or `Ctrl+←`/`Ctrl+→` — resizes
+it (`_set_helper_width` clamps the split). The command loop is: parse via the
+registry → run against `MonayApp` → render the
 result (✓ / ✗ / a typed `Yes`/`No` confirmation). The Docs tab (`screens/docs.py`)
 renders the man-style reference straight from `REGISTRY.specs()`, so it never
 drifts from what the app accepts; `help` selects it (`help <command>` filters it).

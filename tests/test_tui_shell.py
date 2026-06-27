@@ -15,6 +15,7 @@ from monay.domain.money import Money
 from monay.domain.values import MonthKey
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
+from monay.tui.widgets.divider import PaneDivider
 from tests.fakes import FixedClock
 
 
@@ -154,3 +155,42 @@ async def _help_scenario() -> None:
 
 def test_help_opens_docs_tab():
     asyncio.run(_help_scenario())
+
+
+async def _resize_scenario() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+
+    async with app.run_test() as pilot:
+        right = app.query_one("#right-pane")
+        divider = app.query_one("#divider")
+
+        # keyboard resize grows then shrinks the helper pane
+        start = app._helper_width
+        app.action_resize_helper(4)
+        assert app._helper_width == start + 4
+        app.action_resize_helper(-2)
+        assert app._helper_width == start + 2
+
+        # dragging the divider right shrinks the pane (opposite of the delta)
+        before = app._helper_width
+        app.on_pane_divider_dragged(PaneDivider.Dragged(3))
+        assert app._helper_width == before - 3
+
+        # clamps: a huge grow caps below the panes width; a huge shrink floors out
+        panes = app.query_one("#panes").size.width
+        app.action_resize_helper(10_000)
+        assert app._helper_width == max(app.MIN_HELPER, panes - app.MIN_WORKING - 1)
+        app.action_resize_helper(-10_000)
+        assert app._helper_width == app.MIN_HELPER
+
+        # ctrl+b hides both the pane and the divider
+        app.action_toggle_helpers()
+        await pilot.pause()
+        assert right.has_class("hidden") and divider.has_class("hidden")
+
+
+def test_helper_pane_is_resizable():
+    asyncio.run(_resize_scenario())

@@ -135,7 +135,8 @@ Pockets, Settings) and helper tabs on the right (**Docs**, **History**).
 
 `open <section>` drills into a section's fields · `back` / `Esc` returns ·
 `goto <tab>` switches tab (either pane) · `Tab` cycles tabs · `Ctrl+B` toggles
-the helper pane.
+the helper pane · drag the divider between the panes, or `Ctrl+←`/`Ctrl+→`, to
+resize it (the controls are also shown along the bottom of the helper pane).
 
 ### Closing a month
 

@@ -11,6 +11,7 @@ Typed ``Yes``/``No`` answers a pending confirmation.
 from __future__ import annotations
 
 from rich.console import RenderableType
+from textual import events
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -27,6 +28,7 @@ from monay.tui.screens.history import render_history
 from monay.tui.screens.pockets import render_pockets
 from monay.tui.screens.settings import render_settings
 from monay.tui.screens.transactions import render_transactions
+from monay.tui.widgets.divider import PaneDivider
 
 _WORKING_TABS = ("budget", "transactions", "pockets", "settings")  # left pane
 _HELPER_TABS = ("docs", "history")  # right pane
@@ -40,11 +42,14 @@ class Monay(App[None]):
     }}
     Tabs {{ background: {theme.TABS_BG}; }}
     #panes {{ height: 1fr; }}
-    #left-pane {{ width: 2fr; }}
-    #right-pane {{ width: 1fr; border-left: solid {theme.PANEL}; }}
-    #right-pane.hidden {{ display: none; }}
+    #left-pane {{ width: 1fr; }}
+    #right-pane {{ width: 40; }}
+    #right-pane.hidden, #divider.hidden {{ display: none; }}
+    #divider {{ width: 1; height: 1fr; background: {theme.PANEL}; }}
+    #divider:hover {{ background: {theme.INFO}; }}
     #content-scroll, #helper-scroll {{ height: 1fr; }}
     #content, #helper-content {{ height: auto; padding: 1 2; color: {theme.TEXT}; }}
+    #helper-hint {{ height: 1; padding: 0 1; color: {theme.TEXT}; text-style: dim; }}
     #feedback {{ height: 1; padding: 0 1; color: {theme.OK}; }}
     #feedback.error {{ color: {theme.ERROR}; }}
     #feedback.confirm {{ color: {theme.WARN}; }}
@@ -55,13 +60,20 @@ class Monay(App[None]):
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit", priority=True),
         Binding("ctrl+b", "toggle_helpers", "Helpers", priority=True),
+        Binding("ctrl+left", "resize_helper(2)", "Wider helpers", priority=True),
+        Binding("ctrl+right", "resize_helper(-2)", "Narrower helpers", priority=True),
     ]
+
+    # Helper pane width (cells) and the minimum widths the resize keeps free.
+    MIN_HELPER = 24
+    MIN_WORKING = 30
 
     def __init__(self, service: MonayApp, registry: CommandRegistry) -> None:
         super().__init__()
         self._service = service
         self._commands = registry
         self._pending: str | None = None
+        self._helper_width: int = 40  # right-pane width in cells (resizable)
         # last rendered text (handy for tests / introspection)
         self.last_feedback: str = ""
         self.last_status: str = ""
@@ -74,12 +86,14 @@ class Monay(App[None]):
                 yield Tabs(*(Tab(t.title(), id=t) for t in _WORKING_TABS), id="tabs")
                 with VerticalScroll(id="content-scroll"):
                     yield Static(id="content")
+            yield PaneDivider(id="divider")
             with Vertical(id="right-pane"):
                 yield Tabs(
                     *(Tab(t.title(), id=t) for t in _HELPER_TABS), id="helper-tabs"
                 )
                 with VerticalScroll(id="helper-scroll"):
                     yield Static(id="helper-content")
+                yield Static("drag │ · Ctrl+←/→ resize · Ctrl+B hide", id="helper-hint")
         yield Static(id="feedback")
         yield CommandBar(id="command")
 
@@ -149,9 +163,29 @@ class Monay(App[None]):
         helper_tabs = self.query_one("#helper-tabs", Tabs)
         if helper_tabs.active != self._service.helper_tab:
             helper_tabs.active = self._service.helper_tab
-        self.query_one("#right-pane").set_class(
-            not self._service.helpers_visible, "hidden"
-        )
+        hidden = not self._service.helpers_visible
+        self.query_one("#right-pane").set_class(hidden, "hidden")
+        self.query_one("#divider").set_class(hidden, "hidden")
+
+    # --- resizable helper pane -------------------------------------------
+    def _set_helper_width(self, width: int) -> None:
+        panes = self.query_one("#panes").size.width
+        if panes <= 0:
+            return  # not laid out yet; a later resize will clamp correctly
+        max_w = max(self.MIN_HELPER, panes - self.MIN_WORKING - 1)  # -1: the divider
+        self._helper_width = max(self.MIN_HELPER, min(width, max_w))
+        self.query_one("#right-pane").styles.width = self._helper_width
+
+    def action_resize_helper(self, delta: int) -> None:
+        self._set_helper_width(self._helper_width + delta)
+
+    def on_pane_divider_dragged(self, event: PaneDivider.Dragged) -> None:
+        # The divider moving right shrinks the right pane, and vice versa.
+        self._set_helper_width(self._helper_width - event.delta)
+
+    def on_resize(self, event: events.Resize) -> None:
+        # Keep the split valid when the terminal itself is resized.
+        self._set_helper_width(self._helper_width)
 
     def _show(self, result: Result) -> None:
         fb = self.query_one("#feedback", Static)
