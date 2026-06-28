@@ -19,7 +19,7 @@ hand-verified engine test, then persistence, wiring, and the TUI):
   facade; the spec-driven command registry (parser + help + execution from one
   source).
 - **TUI** — the Textual shell (tabs, context bar, feedback line, command loop)
-  and all five tabs: Budget (with section drill-in), Transactions, Pockets,
+  and all five tabs: Budget (accordion sections), Transactions, Pockets,
   History, Settings.
 - **Packaging** — a PyInstaller spec and a GitHub Actions matrix that builds
   Linux + Windows binaries (x86_64 and arm64) and smoke-tests each one.

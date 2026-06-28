@@ -19,6 +19,7 @@ from textual.widgets import Input, Static, Tab, Tabs
 
 from monay.app.commands import CommandRegistry, Result
 from monay.app.services import MonayApp, month_label
+from monay.domain.entities import INCOME_SECTION_NAME
 from monay.domain.errors import MonayError
 from monay.tui import theme
 from monay.tui.command_bar import CommandBar
@@ -143,6 +144,22 @@ class Monay(App[None]):
         self._service.helpers_visible = not self._service.helpers_visible
         self._refresh()
 
+    # Clicking a Budget-tab section/income row fires these via its ``@click`` meta.
+    def action_toggle_section(self, position: int) -> None:
+        try:
+            month = self._service.active_month()
+        except MonayError:
+            return
+        for s in month.sections:
+            if s.position == position:
+                self._service.toggle_section(s.name)
+                self._refresh()
+                return
+
+    def action_toggle_income(self) -> None:
+        self._service.toggle_section(INCOME_SECTION_NAME)
+        self._refresh()
+
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
         if event.tab is None or event.tab.id is None:
             return
@@ -222,7 +239,7 @@ class Monay(App[None]):
                 return render_transactions(month, s.tx_filter, s.currency)
             if s.tab == "pockets":
                 return render_pockets(month, s.currency)
-            return render_budget(month, s.drilled_section, s.currency)
+            return render_budget(month, s.expanded_sections, s.currency)
         except MonayError:
             return "No month."
 

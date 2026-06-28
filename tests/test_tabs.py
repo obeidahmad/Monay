@@ -117,8 +117,8 @@ async def _full_loop() -> None:
         "goto history",
         "goto settings",
         "goto budget",
-        "open Needs",
-        "back",
+        "expand Needs",
+        "collapse",
     ]
 
     async def run(cmd):
