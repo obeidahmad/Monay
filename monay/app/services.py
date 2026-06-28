@@ -423,6 +423,14 @@ class MonayApp:
                 self._load_active(uow).section(name)  # raises NotFoundError if gone
         self.expanded_sections.discard(canonical)
 
+    def expand_all(self) -> None:
+        with self._uow_factory() as uow:
+            month = self._load_active(uow)
+            names = {s.name for s in month.sections}
+            if month.incomes:
+                names.add(INCOME_SECTION_NAME)
+        self.expanded_sections = names
+
     def collapse_all(self) -> None:
         self.expanded_sections.clear()
 

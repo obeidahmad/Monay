@@ -78,8 +78,8 @@ SPECS: list[CommandSpec] = [
     ),
     CommandSpec(
         ("expand",),
-        (Arg("section", SECTION),),
-        "Expand a section inline (or 'income' for the income breakdown).",
+        (Arg("section", SECTION, required=False),),
+        "Expand a section inline ('income' for the breakdown), or all if none given.",
         h.h_expand,
     ),
     CommandSpec(

@@ -219,3 +219,27 @@ async def _collapse_one_vs_all() -> None:
 
 def test_collapse_one_then_all():
     asyncio.run(_collapse_one_vs_all())
+
+
+async def _expand_all() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+    async with app.run_test() as pilot:
+        for cmd in (
+            "profile add Demo",
+            "income add Pay 1000",
+            "section add post Needs 50%",
+            "section add post Wants 50%",
+            "expand",  # no name: open every row, like bare collapse closes every row
+        ):
+            app.query_one(CommandBar).value = cmd
+            await pilot.press("enter")
+            await pilot.pause()
+        assert service.expanded_sections == {"income", "Needs", "Wants"}
+        assert app.last_status == "info"
+
+
+def test_expand_all():
+    asyncio.run(_expand_all())

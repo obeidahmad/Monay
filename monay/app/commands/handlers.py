@@ -211,8 +211,12 @@ def h_goto(app: MonayApp, a: Args) -> Result:
 
 
 def h_expand(app: MonayApp, a: Args) -> Result:
-    app.expand_section(a["section"])
-    return Result.info(f"expanded {a['section']}")
+    section = a["section"]
+    if section:
+        app.expand_section(section)
+        return Result.info(f"expanded {section}")
+    app.expand_all()
+    return Result.info("expanded all sections")
 
 
 def h_collapse(app: MonayApp, a: Args) -> Result:
