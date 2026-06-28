@@ -57,7 +57,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 avail=money_str(month.total_income),
                 rest=Text(""),
                 warn=Text(""),
-                action="app.toggle_income()",
+                meta={"toggle_income": True},
                 body=_income_table(month) if is_open else None,
             )
         )
@@ -71,7 +71,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 avail=money_str(s.available),
                 rest=signed(s.rest),
                 warn=Text("⚠", style=theme.WARN) if s.rest.is_negative else Text(""),
-                action=f"app.toggle_section({s.position})",
+                meta={"toggle_section": s.position},
                 body=_field_table(s) if is_open else None,
             )
         )
@@ -87,15 +87,32 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
         ]
     )
 
-    blocks: list[RenderableType] = [_header_row(name_w, kind_w, money_w)]
-    for e in entries:
+    blocks: list[RenderableType] = [
+        _header_row(name_w, kind_w, money_w),
+        _rule(name_w, kind_w, money_w),
+    ]
+
+    def add_entry(e: _Entry) -> None:
         row = _row_table(name_w, kind_w, money_w)
-        label = Text(e.name, style=Style(color=e.accent, meta={"@click": e.action}))
+        # The custom meta key (not "@click") avoids Textual's link restyle, which
+        # would override the accent color and underline the name; the app's
+        # on_click reads this meta to toggle the row.
+        label = Text(e.name, style=Style(color=e.accent, meta=e.meta))
         row.add_row(label, Text(e.kind), Text(e.avail), e.rest, e.warn)
         blocks.append(row)
         if e.body is not None:
             blocks.append(Padding(e.body, (0, 0, 1, 2)))  # indent + a trailing gap
 
+    if month.incomes:
+        add_entry(entries[0])  # income leads, set apart from the spending sections
+        blocks.append(Text(""))
+        section_entries = entries[1:]
+    else:
+        section_entries = entries
+    for e in section_entries:
+        add_entry(e)
+
+    blocks.append(Text(""))  # breathe before the summary footer
     blocks.append(_summary(month, sections))
     return Group(*blocks)
 
@@ -112,7 +129,7 @@ class _Entry:
         avail: str,
         rest: Text,
         warn: Text,
-        action: str,
+        meta: dict[str, object],
         body: RenderableType | None,
     ) -> None:
         self.name = name
@@ -121,12 +138,19 @@ class _Entry:
         self.avail = avail
         self.rest = rest
         self.warn = warn
-        self.action = action
+        self.meta = meta
         self.body = body
 
 
 def _marker(is_open: bool) -> str:
     return _EXPANDED if is_open else _COLLAPSED
+
+
+def _rule(name_w: int, kind_w: int, money_w: int) -> Text:
+    # A header underline spanning the table width: the five columns plus the
+    # inter-column padding (4 gaps × 2 cells of padding, edges excluded).
+    width = name_w + kind_w + 2 * money_w + 1 + 8
+    return Text("─" * width, style="dim")
 
 
 def _row_table(name_w: int, kind_w: int, money_w: int) -> Table:
@@ -146,8 +170,8 @@ def _header_row(name_w: int, kind_w: int, money_w: int) -> Table:
     table.add_row(
         Text("SECTIONS", style="bold"),
         Text(""),
-        Text("avail", style="dim"),
-        Text("rest", style="dim"),
+        Text("avail", style="bold"),
+        Text("rest", style="bold"),
         Text(""),
     )
     return table

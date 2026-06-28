@@ -119,10 +119,10 @@ def test_budget_tab_expand_collapse_via_shell():
 
 
 async def _click_cell(pilot, app, action_fragment: str) -> bool:
-    """Click the content cell whose ``@click`` meta contains ``action_fragment``.
+    """Click the content cell whose meta carries a key named ``action_fragment``.
 
     Locating the cell by its meta (rather than hard-coded coordinates) keeps the
-    test robust to layout, while still exercising the real mouse → meta → action
+    test robust to layout, while still exercising the real mouse → meta → on_click
     path that a user's click goes through.
     """
     from textual.widgets import Static
@@ -131,8 +131,7 @@ async def _click_cell(pilot, app, action_fragment: str) -> bool:
     reg = content.region
     for sy in range(reg.y, reg.y + reg.height):
         for sx in range(reg.x, reg.x + reg.width):
-            action = app.screen.get_style_at(sx, sy).meta.get("@click") or ""
-            if action_fragment in action:
+            if action_fragment in app.screen.get_style_at(sx, sy).meta:
                 await pilot.click(content, offset=(sx - reg.x, sy - reg.y))
                 await pilot.pause()
                 return True

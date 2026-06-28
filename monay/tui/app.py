@@ -144,8 +144,18 @@ class Monay(App[None]):
         self._service.helpers_visible = not self._service.helpers_visible
         self._refresh()
 
-    # Clicking a Budget-tab section/income row fires these via its ``@click`` meta.
-    def action_toggle_section(self, position: int) -> None:
+    def on_click(self, event: events.Click) -> None:
+        # A Budget-tab row carries its toggle target in cell metadata (a custom
+        # key, not ``@click``, so Textual doesn't restyle the accent-colored name).
+        # The Click event exposes the style under the cursor, so we read it here.
+        meta = event.style.meta
+        if "toggle_income" in meta:
+            self._service.toggle_section(INCOME_SECTION_NAME)
+            self._refresh()
+        elif "toggle_section" in meta:
+            self._toggle_section_at(meta["toggle_section"])
+
+    def _toggle_section_at(self, position: int) -> None:
         try:
             month = self._service.active_month()
         except MonayError:
@@ -155,10 +165,6 @@ class Monay(App[None]):
                 self._service.toggle_section(s.name)
                 self._refresh()
                 return
-
-    def action_toggle_income(self) -> None:
-        self._service.toggle_section(INCOME_SECTION_NAME)
-        self._refresh()
 
     def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
         if event.tab is None or event.tab.id is None:

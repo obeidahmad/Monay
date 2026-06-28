@@ -218,9 +218,11 @@ drifts from what the app accepts; `help` selects it (`help <command>` filters it
 Tab screens build Rich renderables; `format.py` + `theme.py` handle colors. The
 Budget tab is an **accordion** (`widgets/accordion.py`): one summary row per
 section (plus the income pseudo-section), any number expandable inline to their
-field table. A row's name carries a Rich `@click` action (`app.toggle_section` /
-`app.toggle_income`) so clicking toggles it; `expand`/`collapse` do the same from
-the command bar. The set of open rows lives in `MonayApp.expanded_sections`.
+field table. A row's name carries its toggle target in cell metadata (a custom
+key, not Rich's `@click` — which would override the accent color and underline the
+name); the app's `on_click` reads that meta to toggle the row, and
+`expand`/`collapse` do the same from the command bar. The set of open rows lives
+in `MonayApp.expanded_sections`.
 
 ---
 
