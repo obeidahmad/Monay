@@ -255,15 +255,24 @@ async def _autocomplete_scenario() -> None:
         await pilot.press("tab")  # wraps back to the first match
         assert bar.value == "section add"
 
+        # a single match accepts once, then repeated Tab is a stable no-op
+        bar.value = "prof"
+        await pilot.press("tab")
+        assert bar.value == "profile"
+        await pilot.press("tab")
+        assert bar.value == "profile"
+
         # an in-context name completes from the live month
         bar.value = "section set "
         await pilot.press("tab")
         assert bar.value == "section set Needs"
 
-        # nothing to complete (a free amount) leaves the line untouched
+        # nothing to complete (a free amount) leaves the line untouched, and Tab
+        # is consumed so focus stays on the always-focused command bar
         bar.value = "add Needs "
         await pilot.press("tab")
         assert bar.value == "add Needs "
+        assert app.focused is bar
 
 
 def test_command_bar_autocomplete():

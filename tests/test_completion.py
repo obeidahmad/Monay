@@ -24,6 +24,11 @@ def test_completes_a_verb():
     assert comp("prof") == ["profile"]
 
 
+def test_exact_verb_has_no_completion():
+    # a fully-typed token suggests nothing (the `cand != low` filter)
+    assert comp("profile") == []
+
+
 def test_verb_prefix_lists_all_matches_in_order():
     assert comp("p") == ["pocket", "profile"]
 

@@ -74,31 +74,35 @@ class CommandBar(Input):
         elif event.key == "escape":
             self.value = ""
         elif event.key == "tab":
-            if not self._complete_or_cycle():
-                return  # nothing to complete — let Tab fall through to focus
+            self._complete_or_cycle()
+            # Always consume Tab: the command bar is meant to stay focused, so we
+            # never let Tab fall through to Textual's focus-cycle (which would
+            # jump to the Tabs widgets), even when there's nothing to complete.
         else:
             return
         event.prevent_default()
         event.stop()
 
-    def _complete_or_cycle(self) -> bool:
-        """Apply the next completion on Tab; return ``False`` if there is none.
+    def _complete_or_cycle(self) -> None:
+        """Apply the next completion on Tab (a no-op when there is none).
 
-        Re-pressing Tab without editing advances through the matches (wrapping);
-        any edit resets the cycle, since the value no longer matches what we
-        last applied.
+        Re-pressing Tab without editing advances through the matches (wrapping,
+        so a single match stays put); any edit resets the cycle, since the value
+        no longer matches what we last applied.
         """
         if self._cycle and self.value == self._cycle_value:
             self._cycle_at = (self._cycle_at + 1) % len(self._cycle)
         else:
+            # Each Tab runs complete() twice — here, and again via the suggester
+            # reacting to the value change below. Fine while complete() is pure
+            # and cheap; if it ever gets heavy, cache it keyed on (value, names).
             self._cycle = complete(self._registry, self._names(), self.value)
             self._cycle_at = 0
             if not self._cycle:
-                return False
+                return
         self.value = self._cycle[self._cycle_at]
         self.cursor_position = len(self.value)
         self._cycle_value = self.value
-        return True
 
     def _recall(self, step: int) -> None:
         if not self._history:

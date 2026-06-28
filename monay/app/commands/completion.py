@@ -58,9 +58,11 @@ def complete(registry: CommandRegistry, names: CompletionNames, text: str) -> li
         return []
 
     low = partial.casefold()
+    # _candidates returns the raw candidate set for this position; the prefix
+    # filter (and the "nothing to add" exclusion) is applied here, once.
     return [
         head_text + cand
-        for cand in _candidates(registry, names, head_tokens, partial)
+        for cand in _candidates(registry, names, head_tokens, low)
         if cand.casefold().startswith(low) and cand.casefold() != low
     ]
 
@@ -77,8 +79,12 @@ def _candidates(
     registry: CommandRegistry,
     names: CompletionNames,
     head_tokens: list[str],
-    partial: str,
+    low: str,
 ) -> list[str]:
+    # Returns the raw candidate set for the current position; complete() filters
+    # it by prefix. The subverb branch is the one exception — it uses a pass/fail
+    # gate on ``low`` to decide whether to offer subverbs at all, or fall through
+    # to argument completion of a one-token form (e.g. `tx <filter>`).
     if not head_tokens:
         return registry.verbs()  # completing the verb itself
 
@@ -91,7 +97,6 @@ def _candidates(
                 if len(s.path) == 2 and s.path[0] == verb
             }
         )
-        low = partial.casefold()
         if subverbs and (
             not low or any(sv.casefold().startswith(low) for sv in subverbs)
         ):
