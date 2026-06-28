@@ -203,12 +203,12 @@ monay/
   tui/         Textual app: shell, command bar, theme, screens, widgets
   bootstrap.py composition root (dependency-injector container)
 tests/         unit + engine + adapter + headless-TUI tests
-docs/          DEVELOPING (code guide) · PLAN (roadmap)
+docs/          DEVELOPING (code guide)
 ```
 
 Contributors: see **[CONTRIBUTING.md](CONTRIBUTING.md)** for the development
-loop, **[docs/DEVELOPING.md](docs/DEVELOPING.md)** for how the code is organized,
-and **[docs/PLAN.md](docs/PLAN.md)** for what's next.
+loop and **[docs/DEVELOPING.md](docs/DEVELOPING.md)** for how the code is
+organized.
 
 ## 📜 License
 

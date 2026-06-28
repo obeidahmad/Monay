@@ -2,8 +2,7 @@
 
 How the code is organized and how the pieces fit, for anyone reading or
 modifying Monay. (User-facing concepts and commands live in the
-[README](../README.md); the remaining roadmap is in [PLAN.md](PLAN.md); how to
-cut a release is in [RELEASING.md](RELEASING.md).)
+[README](../README.md); how to cut a release is in [RELEASING.md](RELEASING.md).)
 
 ---
 

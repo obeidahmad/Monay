@@ -18,6 +18,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import Input, Static, Tab, Tabs
 
 from monay.app.commands import CommandRegistry, Result
+from monay.app.commands.completion import CompletionNames
 from monay.app.services import MonayApp, month_label
 from monay.domain.entities import INCOME_SECTION_NAME
 from monay.domain.errors import MonayError
@@ -78,6 +79,8 @@ class Monay(App[None]):
         self._commands = registry
         self._pending: str | None = None
         self._helper_width: int = self.HELPER_WIDTH  # right-pane width (resizable)
+        # Cached name pools for command-bar autocomplete, refreshed each render.
+        self._name_pools = CompletionNames()
         # last rendered text (handy for tests / introspection)
         self.last_feedback: str = ""
         self.last_status: str = ""
@@ -99,7 +102,7 @@ class Monay(App[None]):
                     yield Static(id="helper-content")
                 yield Static("Ctrl+←/→ resize · Ctrl+B hide", id="helper-hint")
         yield Static(id="feedback")
-        yield CommandBar(id="command")
+        yield CommandBar(self._commands, lambda: self._name_pools, id="command")
 
     def on_mount(self) -> None:
         self.query_one(CommandBar).focus()
@@ -192,6 +195,21 @@ class Monay(App[None]):
         hidden = not self._service.helpers_visible
         self.query_one("#right-pane").set_class(hidden, "hidden")
         self.query_one("#divider").set_class(hidden, "hidden")
+        self._name_pools = self._compute_name_pools()
+
+    def _compute_name_pools(self) -> CompletionNames:
+        """Section/field/pocket names for autocomplete, from the active month."""
+        if self._service.profile_id is None:
+            return CompletionNames()
+        try:
+            m = self._service.active_month()
+        except MonayError:
+            return CompletionNames()
+        return CompletionNames(
+            sections=tuple(s.name for s in m.sections),
+            fields=tuple(dict.fromkeys(f.name for s in m.sections for f in s.fields)),
+            pockets=tuple(p.name for p in m.pockets),
+        )
 
     # --- resizable helper pane -------------------------------------------
     def _set_helper_width(self, width: int) -> None:
