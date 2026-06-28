@@ -1,4 +1,4 @@
-"""The Settings tab (docs/DEVELOPING.md): profile name/currency + profile list.
+"""The Settings tab (docs/DEVELOPING.md): the active profile + profile list.
 
 Sections/fields/pockets are managed where you see them (via commands), not here.
 """
@@ -16,8 +16,6 @@ def render_settings(service: MonayApp, profiles: list[Profile]) -> RenderableTyp
     head = Text()
     head.append("Profile: ", style="dim")
     head.append(service.profile_name or "—", style="bold")
-    head.append("        Currency: ", style="dim")
-    head.append(service.currency)
 
     names = ", ".join(
         (f"{p.name} *" if p.id == service.profile_id else p.name) for p in profiles

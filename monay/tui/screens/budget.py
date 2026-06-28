@@ -17,9 +17,7 @@ from monay.tui.widgets import accordion
 _NO_SECTIONS = "No sections yet — section add post Need 50%   (see docs)"
 
 
-def render_budget(
-    month: Month | None, expanded: set[str], currency: str = "€"
-) -> RenderableType:
+def render_budget(month: Month | None, expanded: set[str]) -> RenderableType:
     if month is None:
         return Text("No month yet.", style="dim")
     if not month.sections:
@@ -28,5 +26,5 @@ def render_budget(
         # renders via the accordion; the hint nudges adding a section.
         if not month.incomes:
             return hint
-        return Group(accordion.build(month, expanded, currency), hint)
-    return accordion.build(month, expanded, currency)
+        return Group(accordion.build(month, expanded), hint)
+    return accordion.build(month, expanded)

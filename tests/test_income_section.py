@@ -107,7 +107,7 @@ async def _drive() -> None:
 
     def budget(expanded: set[str]) -> str:
         month = service.active_month()
-        return render_text(render_budget(month, expanded, service.currency))
+        return render_text(render_budget(month, expanded))
 
     async with app.run_test() as pilot:
         for cmd in ("profile add Demo", "income add Salary 1000"):

@@ -43,7 +43,6 @@ class MonayApp:
         # session
         self.profile_id: int | None = None
         self.profile_name: str | None = None
-        self.currency: str = "€"
         self.viewing: MonthKey | None = None
         self.viewing_closed: bool = False
         # ephemeral UI state (the TUI reads these)
@@ -98,16 +97,6 @@ class MonayApp:
             uow.commit()
         self.profile_name = new_name
 
-    def set_currency(self, symbol: str) -> None:
-        pid = self._require_profile()
-        with self._uow_factory() as uow:
-            p = uow.profiles.get(pid)
-            assert p is not None  # the active profile exists in storage
-            p.currency_symbol = symbol
-            uow.profiles.update(p)
-            uow.commit()
-        self.currency = symbol
-
     def delete_profile(self, name: str) -> Profile:
         with self._uow_factory() as uow:
             p = uow.profiles.by_name(name)
@@ -146,7 +135,6 @@ class MonayApp:
     def _select(self, profile: Profile) -> None:
         self.profile_id = profile.id
         self.profile_name = profile.name
-        self.currency = profile.currency_symbol
 
     # =====================================================================
     # Month context
@@ -426,7 +414,14 @@ class MonayApp:
         self.expanded_sections.add(self._canonical_section(name))
 
     def collapse_section(self, name: str) -> None:
-        self.expanded_sections.discard(self._canonical_section(name))
+        canonical = self._canonical_section(name)
+        # Validate only when collapsing would do nothing anyway: a redundant
+        # collapse stays a cheap no-op, but a name that was never a real section
+        # (a typo) is reported rather than silently "collapsed".
+        if canonical not in self.expanded_sections and canonical != INCOME_SECTION_NAME:
+            with self._uow_factory() as uow:
+                self._load_active(uow).section(name)  # raises NotFoundError if gone
+        self.expanded_sections.discard(canonical)
 
     def collapse_all(self) -> None:
         self.expanded_sections.clear()

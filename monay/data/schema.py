@@ -40,7 +40,6 @@ profiles = sa.Table(
     metadata,
     sa.Column("id", sa.Integer, primary_key=True),
     sa.Column("name", sa.String, nullable=False, unique=True),
-    sa.Column("currency_symbol", sa.String, nullable=False, default="€"),
     sa.Column("created_at", sa.Date),
 )
 

@@ -94,11 +94,10 @@ def test_keys(engine):
 def test_profile_crud(engine):
     uow = SqlAlchemyUnitOfWork(engine)
     with uow:
-        p = uow.profiles.add(Profile(name="Alice", currency_symbol="$"))
+        p = uow.profiles.add(Profile(name="Alice"))
         uow.commit()
     with SqlAlchemyUnitOfWork(engine) as uow:
         assert uow.profiles.get(p.id).name == "Alice"
-        assert uow.profiles.by_name("Alice").currency_symbol == "$"
         assert uow.profiles.by_name("nobody") is None
         assert [x.name for x in uow.profiles.all()] == ["Alice"]
 

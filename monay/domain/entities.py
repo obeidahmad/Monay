@@ -44,7 +44,6 @@ class Profile:
     """A fully independent budgeting world (its own months/structure/settings)."""
 
     name: str
-    currency_symbol: str = "€"
     id: int | None = None
     created_at: date | None = None
 

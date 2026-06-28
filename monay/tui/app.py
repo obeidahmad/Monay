@@ -236,10 +236,10 @@ class Monay(App[None]):
                 return render_settings(s, s.list_profiles())
             month = s.active_month()
             if s.tab == "transactions":
-                return render_transactions(month, s.tx_filter, s.currency)
+                return render_transactions(month, s.tx_filter)
             if s.tab == "pockets":
-                return render_pockets(month, s.currency)
-            return render_budget(month, s.expanded_sections, s.currency)
+                return render_pockets(month)
+            return render_budget(month, s.expanded_sections)
         except MonayError:
             return "No month."
 

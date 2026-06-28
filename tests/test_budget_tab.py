@@ -75,6 +75,18 @@ def test_multiple_sections_expand_at_once():
     assert "Savings" in text  # the still-collapsed section's summary row
 
 
+def test_stale_expansion_is_pruned():
+    # A section expanded, then renamed, must not keep rendering expanded under its
+    # old name — build() prunes names that no longer match a real section.
+    m = _sample()
+    m.edit_section("Needs", new_name="Essentials")
+    m.recompute()
+    text = render_text(accordion.build(m, {"Needs"}))  # stale: "Needs" is gone
+    assert "Essentials" in text  # the section renders under its new name…
+    assert "▼ ▍Essentials" not in text  # …collapsed, not expanded
+    assert "Groceries" not in text  # and its fields are not shown
+
+
 async def _drive() -> None:
     container = build_container("sqlite://")
     container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
@@ -151,6 +163,28 @@ async def _click_toggles() -> None:
 
 def test_clicking_a_row_toggles_it():
     asyncio.run(_click_toggles())
+
+
+async def _click_income() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+    async with app.run_test() as pilot:
+        for cmd in ("profile add Demo", "income add Pay 1000"):
+            app.query_one(CommandBar).value = cmd
+            await pilot.press("enter")
+            await pilot.pause()
+
+        # the income row uses its own action/handler (toggle_income), so cover it too
+        assert await _click_cell(pilot, app, "toggle_income")
+        assert service.expanded_sections == {"income"}
+        assert await _click_cell(pilot, app, "toggle_income")
+        assert service.expanded_sections == set()
+
+
+def test_clicking_the_income_row_toggles_it():
+    asyncio.run(_click_income())
 
 
 async def _collapse_one_vs_all() -> None:

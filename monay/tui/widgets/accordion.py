@@ -39,7 +39,7 @@ _COLLAPSED = "▶"
 _EXPANDED = "▼"
 
 
-def build(month: Month, expanded: set[str], currency: str = "€") -> RenderableType:
+def build(month: Month, expanded: set[str]) -> RenderableType:
     sections = sorted(month.sections, key=lambda s: s.position)
     # Prune stale expansions (a section deleted/renamed since it was expanded) so
     # only rows that actually render can be open.
@@ -176,10 +176,7 @@ def _field_table(s: Section) -> Table:
     return table
 
 
-def _income_table(month: Month) -> RenderableType:
-    if not month.incomes:
-        return Text("No income yet — income add Salary 1000", style="dim")
-
+def _income_table(month: Month) -> Table:
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)
     table.add_column("Source")
     table.add_column("Amount", justify="right")

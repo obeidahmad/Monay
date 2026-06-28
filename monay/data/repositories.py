@@ -75,7 +75,6 @@ class SqlAlchemyProfileRepository:
             self._conn.execute(
                 profiles.insert().values(
                     name=profile.name,
-                    currency_symbol=profile.currency_symbol,
                     created_at=profile.created_at,
                 )
             )
@@ -86,7 +85,7 @@ class SqlAlchemyProfileRepository:
         self._conn.execute(
             update(profiles)
             .where(profiles.c.id == profile.id)
-            .values(name=profile.name, currency_symbol=profile.currency_symbol)
+            .values(name=profile.name)
         )
 
     def all(self) -> list[Profile]:
@@ -104,7 +103,6 @@ def conn_one(conn: sa.Connection, stmt: sa.Select[Any]) -> sa.Row[Any] | None:
 def _to_profile(row: sa.Row[Any]) -> Profile:
     return Profile(
         name=row.name,
-        currency_symbol=row.currency_symbol,
         id=row.id,
         created_at=row.created_at,
     )
