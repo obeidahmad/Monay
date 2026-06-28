@@ -2,7 +2,7 @@
 
 A ``CommandSpec`` declares a command's path (verb + optional subverb), its
 argument schema, help text, and handler. The same specs drive the parser, the
-``help`` output, and (Phase 12) autocomplete, so they can never drift from
+``help`` output, and command-bar autocomplete, so they can never drift from
 execution (docs/DEVELOPING.md).
 """
 

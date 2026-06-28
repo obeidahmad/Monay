@@ -224,3 +224,47 @@ async def _resize_scenario() -> None:
 
 def test_helper_pane_is_resizable():
     asyncio.run(_resize_scenario())
+
+
+async def _autocomplete_scenario() -> None:
+    container = build_container("sqlite://")
+    container.clock.override(providers.Object(FixedClock(date(2025, 1, 15))))
+    service = container.app_service()
+    app = Monay(service, container.registry())
+
+    async with app.run_test() as pilot:
+        await _type(pilot, app, "profile add Demo")
+        await _type(pilot, app, "section add post Needs 100%")
+
+        bar = app.query_one(CommandBar)
+        bar.focus()
+
+        # the suggester offers the first registry match as ghost text
+        assert await bar.suggester.get_suggestion("prof") == "profile"
+
+        # Tab accepts, then cycles through the matching subverbs in place
+        bar.value = "section "
+        await pilot.press("tab")
+        assert bar.value == "section add"
+        await pilot.press("tab")
+        assert bar.value == "section del"
+        await pilot.press("tab")
+        assert bar.value == "section order"
+        await pilot.press("tab")
+        assert bar.value == "section set"
+        await pilot.press("tab")  # wraps back to the first match
+        assert bar.value == "section add"
+
+        # an in-context name completes from the live month
+        bar.value = "section set "
+        await pilot.press("tab")
+        assert bar.value == "section set Needs"
+
+        # nothing to complete (a free amount) leaves the line untouched
+        bar.value = "add Needs "
+        await pilot.press("tab")
+        assert bar.value == "add Needs "
+
+
+def test_command_bar_autocomplete():
+    asyncio.run(_autocomplete_scenario())
