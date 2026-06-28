@@ -77,12 +77,17 @@ SPECS: list[CommandSpec] = [
         summary=h._del_summary("transaction"),
     ),
     CommandSpec(
-        ("open",),
-        (Arg("section", SECTION),),
-        "Drill into a section (or 'income' for the income breakdown).",
-        h.h_open,
+        ("expand",),
+        (Arg("section", SECTION, required=False),),
+        "Expand a section inline ('income' for the breakdown), or all if none given.",
+        h.h_expand,
     ),
-    CommandSpec(("back",), (), "Return to the section list.", h.h_back),
+    CommandSpec(
+        ("collapse",),
+        (Arg("section", SECTION, required=False),),
+        "Collapse a section, or all sections if none given.",
+        h.h_collapse,
+    ),
     CommandSpec(
         ("section", "add"),
         (

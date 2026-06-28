@@ -43,7 +43,6 @@ class MonayApp:
         # session
         self.profile_id: int | None = None
         self.profile_name: str | None = None
-        self.currency: str = "€"
         self.viewing: MonthKey | None = None
         self.viewing_closed: bool = False
         # ephemeral UI state (the TUI reads these)
@@ -51,7 +50,7 @@ class MonayApp:
         self.helper_tab: str = "docs"  # active helper tab (right pane)
         self.helpers_visible: bool = True  # is the right (helper) pane shown?
         self.docs_query: str | None = None  # filter for the Docs tab, if any
-        self.drilled_section: str | None = None
+        self.expanded_sections: set[str] = set()
         self.tx_filter: str | None = None
         self.should_quit: bool = False
 
@@ -98,16 +97,6 @@ class MonayApp:
             uow.commit()
         self.profile_name = new_name
 
-    def set_currency(self, symbol: str) -> None:
-        pid = self._require_profile()
-        with self._uow_factory() as uow:
-            p = uow.profiles.get(pid)
-            assert p is not None  # the active profile exists in storage
-            p.currency_symbol = symbol
-            uow.profiles.update(p)
-            uow.commit()
-        self.currency = symbol
-
     def delete_profile(self, name: str) -> Profile:
         with self._uow_factory() as uow:
             p = uow.profiles.by_name(name)
@@ -146,7 +135,6 @@ class MonayApp:
     def _select(self, profile: Profile) -> None:
         self.profile_id = profile.id
         self.profile_name = profile.name
-        self.currency = profile.currency_symbol
 
     # =====================================================================
     # Month context
@@ -412,19 +400,47 @@ class MonayApp:
         self.tx_filter = text or None
         self.tab = "transactions"
 
-    def open_section(self, name: str) -> None:
-        # 'income' drills into the synthetic income pseudo-section, which is not a
-        # real Section — skip the existence check (the TUI renders it directly)
-        # and store the canonical name regardless of the case the user typed.
-        if name.lower() == INCOME_SECTION_NAME:
-            self.drilled_section = INCOME_SECTION_NAME
-            return
-        with self._uow_factory() as uow:
-            self._load_active(uow).section(name)  # raises NotFoundError if missing
-        self.drilled_section = name
+    def _canonical_section(self, name: str) -> str:
+        # 'income' addresses the synthetic income pseudo-section, which is not a
+        # real Section — store the canonical name regardless of the typed case.
+        return INCOME_SECTION_NAME if name.lower() == INCOME_SECTION_NAME else name
 
-    def back(self) -> None:
-        self.drilled_section = None
+    def expand_section(self, name: str) -> None:
+        # Income is rendered directly (no existence check); a real section must
+        # exist before it can be expanded so a typo is reported, not silently kept.
+        if name.lower() != INCOME_SECTION_NAME:
+            with self._uow_factory() as uow:
+                self._load_active(uow).section(name)  # raises NotFoundError if gone
+        self.expanded_sections.add(self._canonical_section(name))
+
+    def collapse_section(self, name: str) -> None:
+        canonical = self._canonical_section(name)
+        # Validate only when collapsing would do nothing anyway: a redundant
+        # collapse stays a cheap no-op, but a name that was never a real section
+        # (a typo) is reported rather than silently "collapsed".
+        if canonical not in self.expanded_sections and canonical != INCOME_SECTION_NAME:
+            with self._uow_factory() as uow:
+                self._load_active(uow).section(name)  # raises NotFoundError if gone
+        self.expanded_sections.discard(canonical)
+
+    def expand_all(self) -> None:
+        with self._uow_factory() as uow:
+            month = self._load_active(uow)
+            names = {s.name for s in month.sections}
+            if month.incomes:
+                names.add(INCOME_SECTION_NAME)
+        self.expanded_sections = names
+
+    def collapse_all(self) -> None:
+        self.expanded_sections.clear()
+
+    def toggle_section(self, name: str) -> None:
+        # Driven by clicking a rendered row, so the name is trusted (no check).
+        name = self._canonical_section(name)
+        if name in self.expanded_sections:
+            self.expanded_sections.discard(name)
+        else:
+            self.expanded_sections.add(name)
 
     def quit(self) -> None:
         self.should_quit = True

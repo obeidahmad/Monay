@@ -136,10 +136,13 @@ add Groceries 15.71+1.35 d5 weekly shop   # log a transaction (d5 = day 5; day d
 The screen has two panes: working tabs on the left (Budget, Transactions,
 Pockets, Settings) and helper tabs on the right (**Docs**, **History**).
 
-`open <section>` drills into a section's fields · `back` / `Esc` returns ·
-`goto <tab>` switches tab (either pane) · `Tab` cycles tabs · `Ctrl+B` toggles
-the helper pane · drag the divider between the panes, or `Ctrl+←`/`Ctrl+→`, to
-resize it (the keyboard shortcuts are shown along the bottom of the helper pane).
+On the Budget tab, click a section row — or `expand <section>` — to reveal its
+fields inline; any number of sections can be open at once. `expand` with no name
+opens them all, `collapse <section>` closes one, `collapse` closes them all ·
+`goto <tab>` switches tab (either pane) ·
+`Tab` cycles tabs · `Ctrl+B` toggles the helper pane · drag the divider between
+the panes, or `Ctrl+←`/`Ctrl+→`, to resize it (the keyboard shortcuts are shown
+along the bottom of the helper pane).
 
 ### Closing a month
 
@@ -168,7 +171,7 @@ read-only in **History** (`month 2025-01` to view, `month` to return).
 | `income add\|set\|del …` | Manage income entries |
 | `pocket add\|rename\|del <name>` · `pocket main <name>` | Manage pockets |
 | `month [<yyyy-mm>]` · `close` | View a month / close the open one |
-| `open <section>` · `back` · `goto <tab>` | Navigation |
+| `expand [section]` · `collapse [section]` · `goto <tab>` | Expand/collapse a section (or all) · navigation |
 | `profile add\|switch\|rename\|del <name>` | Manage profiles |
 | `help [command]` | Open the Docs tab — the full command reference (filter by command) |
 | `quit` | Exit |

@@ -210,14 +210,22 @@ def h_goto(app: MonayApp, a: Args) -> Result:
     return Result.info(f"→ {a['tab']}")
 
 
-def h_open(app: MonayApp, a: Args) -> Result:
-    app.open_section(a["section"])
-    return Result.info(f"opened {a['section']}")
+def h_expand(app: MonayApp, a: Args) -> Result:
+    section = a["section"]
+    if section:
+        app.expand_section(section)
+        return Result.info(f"expanded {section}")
+    app.expand_all()
+    return Result.info("expanded all sections")
 
 
-def h_back(app: MonayApp, a: Args) -> Result:
-    app.back()
-    return Result.info("back to sections")
+def h_collapse(app: MonayApp, a: Args) -> Result:
+    section = a["section"]
+    if section:
+        app.collapse_section(section)
+        return Result.info(f"collapsed {section}")
+    app.collapse_all()
+    return Result.info("collapsed all sections")
 
 
 def h_profile_add(app: MonayApp, a: Args) -> Result:

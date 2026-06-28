@@ -1,8 +1,8 @@
-"""The income pseudo-section: it renders on the Budget tab and drills in (#32).
+"""The income pseudo-section: it renders on the Budget tab and expands (#32).
 
 Income shows as a distinct row above the real sections (carrying total income),
-is reachable via ``open income``, and appears even before any section exists. The
-name ``income`` is reserved so no real section can shadow it.
+is expandable via ``expand income``, and appears even before any section exists.
+The name ``income`` is reserved so no real section can shadow it.
 """
 
 import asyncio
@@ -21,7 +21,7 @@ from monay.domain.values import MonthKey, Percentage
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
 from monay.tui.screens.budget import render_budget
-from monay.tui.widgets import section_list
+from monay.tui.widgets import accordion
 from tests.fakes import FixedClock
 from tests.fixtures.sample_budget import build_sample
 
@@ -45,24 +45,23 @@ def _income_only() -> Month:
 def test_income_row_precedes_sections_in_the_list():
     m = build_sample()
     m.recompute()
-    text = render_text(section_list.build(m))
+    text = render_text(accordion.build(m, set()))
     assert "$ income" in text  # the distinct income row
     assert "2,000.00" in text  # total income in its AVAILABLE column
     # the income row comes before the first real section
     assert text.index("$ income") < text.index("Bills")
 
 
-def test_open_income_lists_each_entry():
+def test_expand_income_lists_each_entry():
     m = build_sample()
     m.recompute()
-    text = render_text(render_budget(m, "income"))
-    assert "INCOME" in text and "total 2,000.00" in text
+    text = render_text(render_budget(m, {"income"}))
     assert "Salary" in text  # the per-entry source name
     assert "manual" in text  # its kind
 
 
 def test_income_shows_before_any_section_exists():
-    text = render_text(render_budget(_income_only(), None))
+    text = render_text(render_budget(_income_only(), set()))
     assert "$ income" in text and "1,000.00" in text  # income is visible
     assert "No sections yet" in text  # …alongside the nudge to add one
 
@@ -70,7 +69,7 @@ def test_income_shows_before_any_section_exists():
 def test_no_sections_no_income_is_just_the_hint():
     m = Month(profile_id=1, key=MonthKey(2025, 1))
     m.recompute()
-    text = render_text(render_budget(m, None))
+    text = render_text(render_budget(m, set()))
     assert "No sections yet" in text
     assert "$ income" not in text
 
@@ -90,13 +89,13 @@ def test_rename_section_to_income_is_rejected():
         m.edit_section("Needs", new_name="income")
 
 
-def test_open_section_stores_canonical_income_name():
-    # Any casing drills into the pseudo-section and is stored canonically. The
-    # income branch returns before touching the UoW, so no profile is needed.
+def test_expand_section_stores_canonical_income_name():
+    # Any casing expands the pseudo-section and is stored canonically. The income
+    # branch skips the existence check, so no profile is needed.
     service = build_container("sqlite://").app_service()
     for variant in ("INCOME", "Income", "income"):
-        service.open_section(variant)
-        assert service.drilled_section == INCOME_SECTION_NAME
+        service.expand_section(variant)
+        assert service.expanded_sections == {INCOME_SECTION_NAME}
 
 
 # --- shell flow ---------------------------------------------------------
@@ -106,9 +105,9 @@ async def _drive() -> None:
     service = container.app_service()
     app = Monay(service, container.registry())
 
-    def budget(drill: str | None) -> str:
+    def budget(expanded: set[str]) -> str:
         month = service.active_month()
-        return render_text(render_budget(month, drill, service.currency))
+        return render_text(render_budget(month, expanded))
 
     async with app.run_test() as pilot:
         for cmd in ("profile add Demo", "income add Salary 1000"):
@@ -117,22 +116,22 @@ async def _drive() -> None:
             await pilot.pause()
 
         # income is on the Budget tab before any section exists
-        text = budget(None)
+        text = budget(set())
         assert "$ income" in text and "1,000.00" in text
 
-        # open income drills into the entries
-        app.query_one(CommandBar).value = "open income"
+        # expand income reveals the entries inline
+        app.query_one(CommandBar).value = "expand income"
         await pilot.press("enter")
         await pilot.pause()
-        assert service.drilled_section == "income"
-        assert "Salary" in budget(service.drilled_section)
+        assert service.expanded_sections == {"income"}
+        assert "Salary" in budget(service.expanded_sections)
 
         # adding a section keeps the income row
-        for cmd in ("back", "section add post Needs 100%"):
+        for cmd in ("collapse", "section add post Needs 100%"):
             app.query_one(CommandBar).value = cmd
             await pilot.press("enter")
             await pilot.pause()
-        text = budget(None)
+        text = budget(set())
         assert "$ income" in text and "Needs" in text
 
 

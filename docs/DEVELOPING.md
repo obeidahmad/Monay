@@ -68,7 +68,7 @@ monay/
     theme.py         palette / section accents / column colors
     format.py        money formatting helpers
     screens/         budget · transactions · pockets · settings · docs · history
-    widgets/         section_list · section_detail · income_detail · divider
+    widgets/         accordion · divider
 ```
 
 ---
@@ -121,10 +121,10 @@ Leftovers were already taxed when they first arrived last month, so they are
 excluded from the tax base; `total_income` still includes them.
 
 On the Budget tab, income is shown as a synthetic **income pseudo-section** — a
-distinct row above the real sections carrying `total_income`, drillable via
-`open income` to list the individual entries. It is not a real `Section` (the
-name `income` is reserved, so no section can shadow it); it just renders income
-on the same tab whether or not any section exists yet.
+distinct row above the real sections carrying `total_income`, expandable (like any
+section, via `expand income` or a click) to list the individual entries. It is not
+a real `Section` (the name `income` is reserved, so no section can shadow it); it
+just renders income on the same tab whether or not any section exists yet.
 
 Per **section**:
 
@@ -215,7 +215,14 @@ registry → run against `MonayApp` → render the
 result (✓ / ✗ / a typed `Yes`/`No` confirmation). The Docs tab (`screens/docs.py`)
 renders the man-style reference straight from `REGISTRY.specs()`, so it never
 drifts from what the app accepts; `help` selects it (`help <command>` filters it).
-Tab screens build Rich renderables; `format.py` + `theme.py` handle colors.
+Tab screens build Rich renderables; `format.py` + `theme.py` handle colors. The
+Budget tab is an **accordion** (`widgets/accordion.py`): one summary row per
+section (plus the income pseudo-section), any number expandable inline to their
+field table. A row's name carries its toggle target in cell metadata (a custom
+key, not Rich's `@click` — which would override the accent color and underline the
+name); the app's `on_click` reads that meta to toggle the row, and
+`expand`/`collapse` do the same from the command bar. The set of open rows lives
+in `MonayApp.expanded_sections`.
 
 ---
 

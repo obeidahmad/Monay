@@ -15,7 +15,7 @@ from monay.domain.month import Month
 from monay.tui.format import money_str, signed
 
 
-def render_pockets(month: Month, currency: str = "€") -> RenderableType:
+def render_pockets(month: Month) -> RenderableType:
     if not month.pockets:
         return Text("No pockets — pocket add Main", style="dim")
 
