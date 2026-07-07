@@ -1,7 +1,9 @@
 """The Budget tab's accordion (docs/DEVELOPING.md).
 
 One row per section (plus the income pseudo-section), each with its accent
-border, kind·share, AVAILABLE and REST, and a ⚠ chip for negative REST. A row's
+border, kind·share, AVAILABLE and REST, the REST destination at close
+(``→ income`` / ``→ carries over`` / ``→ <section>``), and a ⚠ chip for negative
+REST. A row's
 name is clickable: clicking it (or ``expand``/``collapse`` from the command bar)
 toggles its field table **inline**, beneath the row, while every other row stays
 visible. Any number of rows can be expanded at once. A summary line shows income,
@@ -71,7 +73,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 accent=theme.section_accent(i),
                 avail=money_str(s.available),
                 rest=signed(s.rest),
-                routing=Text(_routing_label(s), style="dim"),
+                routing=Text(_routing_label(s)),
                 warn=Text("⚠", style=theme.WARN) if s.rest.is_negative else Text(""),
                 meta={"toggle_section": s.position},
                 body=_field_table(s) if is_open else None,
