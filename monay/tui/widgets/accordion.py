@@ -72,7 +72,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 rest=signed(s.rest),
                 warn=Text("⚠", style=theme.WARN) if s.rest.is_negative else Text(""),
                 meta={"toggle_section": s.position},
-                body=_field_table(s) if is_open else None,
+                body=_section_body(s) if is_open else None,
             )
         )
 
@@ -177,6 +177,11 @@ def _header_row(name_w: int, kind_w: int, money_w: int) -> Table:
     return table
 
 
+def _section_body(s: Section) -> RenderableType:
+    # The expanded drill-in: where REST goes at close, then the field table.
+    return Group(Text(_routing_label(s), style="dim"), _field_table(s))
+
+
 def _field_table(s: Section) -> Table:
     table = Table(box=box.SIMPLE, pad_edge=False, expand=False)
     table.add_column("Field")
@@ -221,6 +226,16 @@ def _kind_label(s: Section) -> str:
         return f"{s.kind.value} · {s.percentage.value}%"
     assert s.amount is not None
     return f"{s.kind.value} · {money_str(s.amount)}"
+
+
+def _routing_label(s: Section) -> str:
+    # Where this section's leftover REST goes at month close (docs/DEVELOPING.md).
+    routing = s.rest_routing
+    if routing.is_income:
+        return "rest → income"
+    if routing.is_self:
+        return "rest → carries over"
+    return f"rest → {routing.target}"
 
 
 def _summary(month: Month, sections: list[Section]) -> Text:
