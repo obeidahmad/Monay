@@ -1,7 +1,9 @@
 """The Budget tab's accordion (docs/DEVELOPING.md).
 
 One row per section (plus the income pseudo-section), each with its accent
-border, kind·share, AVAILABLE and REST, and a ⚠ chip for negative REST. A row's
+border, kind·share, AVAILABLE and REST, the REST destination at close
+(``→ income`` / ``→ carries over`` / ``→ <section>``), and a ⚠ chip for negative
+REST. A row's
 name is clickable: clicking it (or ``expand``/``collapse`` from the command bar)
 toggles its field table **inline**, beneath the row, while every other row stays
 visible. Any number of rows can be expanded at once. A summary line shows income,
@@ -56,6 +58,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 accent=theme.INCOME_ACCENT,
                 avail=money_str(month.total_income),
                 rest=Text(""),
+                routing=Text(""),
                 warn=Text(""),
                 meta={"toggle_income": True},
                 body=_income_table(month) if is_open else None,
@@ -70,6 +73,7 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
                 accent=theme.section_accent(i),
                 avail=money_str(s.available),
                 rest=signed(s.rest),
+                routing=Text(_routing_label(s)),
                 warn=Text("⚠", style=theme.WARN) if s.rest.is_negative else Text(""),
                 meta={"toggle_section": s.position},
                 body=_field_table(s) if is_open else None,
@@ -86,19 +90,20 @@ def build(month: Month, expanded: set[str]) -> RenderableType:
             *(len(e.rest.plain) for e in entries),
         ]
     )
+    routing_w = max([1, *(len(e.routing.plain) for e in entries)])
 
     blocks: list[RenderableType] = [
-        _header_row(name_w, kind_w, money_w),
-        _rule(name_w, kind_w, money_w),
+        _header_row(name_w, kind_w, money_w, routing_w),
+        _rule(name_w, kind_w, money_w, routing_w),
     ]
 
     def add_entry(e: _Entry) -> None:
-        row = _row_table(name_w, kind_w, money_w)
+        row = _row_table(name_w, kind_w, money_w, routing_w)
         # The custom meta key (not "@click") avoids Textual's link restyle, which
         # would override the accent color and underline the name; the app's
         # on_click reads this meta to toggle the row.
         label = Text(e.name, style=Style(color=e.accent, meta=e.meta))
-        row.add_row(label, Text(e.kind), Text(e.avail), e.rest, e.warn)
+        row.add_row(label, Text(e.kind), Text(e.avail), e.rest, e.routing, e.warn)
         blocks.append(row)
         if e.body is not None:
             blocks.append(Padding(e.body, (0, 0, 1, 2)))  # indent + a trailing gap
@@ -128,6 +133,7 @@ class _Entry:
         accent: str,
         avail: str,
         rest: Text,
+        routing: Text,
         warn: Text,
         meta: dict[str, object],
         body: RenderableType | None,
@@ -137,6 +143,7 @@ class _Entry:
         self.accent = accent
         self.avail = avail
         self.rest = rest
+        self.routing = routing
         self.warn = warn
         self.meta = meta
         self.body = body
@@ -146,32 +153,34 @@ def _marker(is_open: bool) -> str:
     return _EXPANDED if is_open else _COLLAPSED
 
 
-def _rule(name_w: int, kind_w: int, money_w: int) -> Text:
-    # A header underline spanning the table width: the five columns plus the
-    # inter-column padding (4 gaps × 2 cells of padding, edges excluded).
-    width = name_w + kind_w + 2 * money_w + 1 + 8
+def _rule(name_w: int, kind_w: int, money_w: int, routing_w: int) -> Text:
+    # A header underline spanning the table width: the six columns plus the
+    # inter-column padding (5 gaps × 2 cells of padding, edges excluded).
+    width = name_w + kind_w + 2 * money_w + routing_w + 1 + 10
     return Text("─" * width, style="dim")
 
 
-def _row_table(name_w: int, kind_w: int, money_w: int) -> Table:
+def _row_table(name_w: int, kind_w: int, money_w: int, routing_w: int) -> Table:
     # A borderless one-row table; the shared explicit widths keep every row's
     # columns aligned even though expanded bodies sit between the rows.
     table = Table(box=None, show_header=False, pad_edge=False, expand=False)
     table.add_column(width=name_w)
     table.add_column(width=kind_w, style="dim")
-    table.add_column(width=money_w, justify="right")
-    table.add_column(width=money_w, justify="right")
-    table.add_column(width=1)
+    table.add_column(width=money_w, justify="right")  # avail
+    table.add_column(width=money_w, justify="right")  # rest
+    table.add_column(width=routing_w, style="dim")  # rest destination
+    table.add_column(width=1)  # ⚠ chip
     return table
 
 
-def _header_row(name_w: int, kind_w: int, money_w: int) -> Table:
-    table = _row_table(name_w, kind_w, money_w)
+def _header_row(name_w: int, kind_w: int, money_w: int, routing_w: int) -> Table:
+    table = _row_table(name_w, kind_w, money_w, routing_w)
     table.add_row(
         Text("SECTIONS", style="bold"),
         Text(""),
         Text("avail", style="bold"),
         Text("rest", style="bold"),
+        Text(""),
         Text(""),
     )
     return table
@@ -221,6 +230,17 @@ def _kind_label(s: Section) -> str:
         return f"{s.kind.value} · {s.percentage.value}%"
     assert s.amount is not None
     return f"{s.kind.value} · {money_str(s.amount)}"
+
+
+def _routing_label(s: Section) -> str:
+    # Where this section's leftover REST goes at month close, shown beside REST
+    # (docs/DEVELOPING.md).
+    routing = s.rest_routing
+    if routing.is_income:
+        return "→ income"
+    if routing.is_self:
+        return "→ carries over"
+    return f"→ {routing.target}"
 
 
 def _summary(month: Month, sections: list[Section]) -> Text:

@@ -7,12 +7,12 @@ from dependency_injector import providers
 from rich.console import Console
 
 from monay.bootstrap import build_container
-from monay.domain.values import Percentage
+from monay.domain.values import Percentage, RestRouting
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
 from monay.tui.widgets import accordion
 from tests.fakes import FixedClock
-from tests.fixtures.sample_budget import build_sample
+from tests.fixtures.sample_budget import build_sample, section
 
 
 def render_text(renderable) -> str:
@@ -64,6 +64,20 @@ def test_expanded_section_shows_fields_columns_inline():
     assert "350.00" in text  # Groceries LEFT
     assert "∞" in text  # Dining's infinite cap
     assert "Budget" in text and "Pocket" in text  # column headers
+
+
+def test_rows_show_rest_routing_even_when_collapsed():
+    # Routing sits beside each section's REST, so it reads without drilling in.
+    text = render_text(accordion.build(_sample(), set()))
+    assert "→ income" in text  # Needs / Wants route to income
+    assert "→ carries over" in text  # Bills / Savings carry over (self)
+
+
+def test_row_shows_section_routing_target():
+    m = _sample()
+    section(m, "Wants").rest_routing = RestRouting.to_section("Bills")
+    text = render_text(accordion.build(m, set()))
+    assert "→ Bills" in text
 
 
 def test_multiple_sections_expand_at_once():
