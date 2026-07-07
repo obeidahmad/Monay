@@ -66,26 +66,18 @@ def test_expanded_section_shows_fields_columns_inline():
     assert "Budget" in text and "Pocket" in text  # column headers
 
 
-def test_expanded_section_shows_income_routing():
-    text = render_text(accordion.build(_sample(), {"Needs"}))  # Needs → income
-    assert "rest → income" in text
+def test_rows_show_rest_routing_even_when_collapsed():
+    # Routing sits beside each section's REST, so it reads without drilling in.
+    text = render_text(accordion.build(_sample(), set()))
+    assert "→ income" in text  # Needs / Wants route to income
+    assert "→ carries over" in text  # Bills / Savings carry over (self)
 
 
-def test_expanded_section_shows_self_routing():
-    text = render_text(accordion.build(_sample(), {"Bills"}))  # Bills → self
-    assert "rest → carries over" in text
-
-
-def test_expanded_section_shows_section_routing_target():
+def test_row_shows_section_routing_target():
     m = _sample()
     section(m, "Wants").rest_routing = RestRouting.to_section("Bills")
-    text = render_text(accordion.build(m, {"Wants"}))
-    assert "rest → Bills" in text
-
-
-def test_collapsed_section_hides_its_routing():
-    text = render_text(accordion.build(_sample(), set()))
-    assert "rest →" not in text  # the routing lives in the hidden body
+    text = render_text(accordion.build(m, set()))
+    assert "→ Bills" in text
 
 
 def test_multiple_sections_expand_at_once():
