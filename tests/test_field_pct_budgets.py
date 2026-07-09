@@ -137,6 +137,25 @@ def test_negative_carried_rest_resolves_pct_to_zero():
     assert emergency.budget == money("0")
 
 
+def test_pct_budget_floors_to_whole_cents():
+    m = make_month("250.25")
+    emergency = add(m, "Emergency", pct=50)
+    m.recompute()
+    assert emergency.budget == money("125.12")  # 125.125 floored, never .13
+    assert m.section("Save").budget_left == money("125.13")  # fraction stays
+
+
+def test_full_pct_section_never_overshoots_base():
+    # Half-even rounding would give 2 × 50.005 -> could exceed 100.01; flooring
+    # guarantees Σ resolved budgets ≤ base, so BUDGET LEFT stays ≥ 0.
+    m = make_month("100.01")
+    a = add(m, "A", pct=50)
+    b = add(m, "B", pct=50)
+    m.recompute()
+    assert (a.budget, b.budget) == (money("50"), money("50"))
+    assert not m.section("Save").budget_left.is_negative
+
+
 def test_rounding_residue_lands_in_budget_left():
     m = make_month("100")
     fields = [add(m, n, pct="33.33") for n in ("A", "B", "C")]

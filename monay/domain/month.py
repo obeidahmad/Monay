@@ -154,7 +154,9 @@ class Month:
         The base is the section's AVAILABLE minus its fixed budgets, clamped at
         zero (a section in deficit resolves every %-budget to 0 — budgets are
         never negative). Every %-field shares the same base, so resolution is
-        order-independent.
+        order-independent. The result is floored to whole cents: a budget is
+        directly spendable money, and flooring means %-fields can never sum
+        past the base — the shaved fraction stays in the section's REST.
         """
         for s in self.sections:
             fixed = sum(
@@ -165,7 +167,7 @@ class Month:
                 base = Money.zero()
             for f in s.fields:
                 if f.budget_pct is not None:
-                    f.budget = f.budget_pct.of(base)
+                    f.budget = f.budget_pct.of(base).floor_cents()
 
     def _recompute_fields_and_rest(self) -> None:
         for s in self.sections:
