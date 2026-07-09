@@ -358,15 +358,18 @@ class Month:
             )
         if not isinstance(cap, Cap):
             raise ValidationError("cap must be a Cap")
-        is_pct = isinstance(budget, Percentage)
+        if isinstance(budget, Percentage):
+            initial, pct = Money.zero(), budget
+        else:
+            initial, pct = self._nonneg(budget, "budget"), None
         f = Field(
             name=name,
-            budget=Money.zero() if is_pct else self._nonneg(budget, "budget"),
+            budget=initial,
             current=Money.zero() if current is None else money(current),
             cap=cap,
             pocket=self.pocket(pocket_name),
             position=len(s.fields),
-            budget_pct=budget if is_pct else None,
+            budget_pct=pct,
         )
         s.fields.append(f)
         self.recompute()
