@@ -121,7 +121,12 @@ def _insert_children(conn: sa.Connection, month_id: int, month: Month) -> None:
                     fields.insert().values(
                         section_id=s.id,
                         name=f.name,
-                        budget=f.budget,
+                        # a %-field's budget is computed, and computed values are
+                        # never stored — every load path recomputes (see get())
+                        budget=f.budget if f.budget_pct is None else Money.zero(),
+                        budget_pct=(
+                            None if f.budget_pct is None else str(f.budget_pct.value)
+                        ),
                         current=f.current,
                         cap_kind="inf" if f.cap.is_infinite else "finite",
                         cap_value=None if f.cap.is_infinite else f.cap.limit,
@@ -249,6 +254,7 @@ def load_month(conn: sa.Connection, profile_id: int, key: MonthKey) -> Month | N
                 pocket=pocket_by_id[fr.pocket_id],
                 position=fr.position,
                 id=fr.id,
+                budget_pct=None if fr.budget_pct is None else Percentage(fr.budget_pct),
             )
             s.fields.append(f)
             field_by_id[fr.id] = f

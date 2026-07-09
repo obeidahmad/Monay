@@ -242,12 +242,14 @@ class MonayApp:
     # =====================================================================
     # Fields
     # =====================================================================
-    def add_field(self, section: str, name: str, budget: Money, cap: Cap) -> Month:
+    def add_field(
+        self, section: str, name: str, budget: Money | Percentage, cap: Cap
+    ) -> Month:
         return self._mutate(
             lambda m: m.add_field(section, name, budget, cap, self._default_pocket(m))
         )
 
-    def set_field_budget(self, name: str, budget: Money) -> Month:
+    def set_field_budget(self, name: str, budget: Money | Percentage) -> Month:
         return self._mutate(
             lambda m: m.set_field_budget(self._sec(m, name), name, budget)
         )

@@ -2,7 +2,8 @@
 
 Closing a month finalizes its numbers, routes each section's REST, locks the
 month forever, and **creates the next month**: the whole structure copied
-forward (sections with kind/order/percent/routing, fields with BUDGET/MAX/pocket),
+forward (sections with kind/order/percent/routing, fields with BUDGET or its
+%/MAX/pocket),
 every field's CURRENT set to its final LEFT, and a single Leftovers income entry
 holding every REST that routed "to income". It spans two months, so it's a
 service rather than a method on the aggregate (docs/DEVELOPING.md).
@@ -80,6 +81,7 @@ class MonthCloser:
                         cap=f.cap,
                         pocket=pockets[f.pocket.name],
                         position=f.position,
+                        budget_pct=f.budget_pct,  # immutable — safe to share
                     )
                 )
             nxt.sections.append(new)

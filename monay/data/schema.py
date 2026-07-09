@@ -87,6 +87,7 @@ fields = sa.Table(
     sa.Column("section_id", sa.Integer, sa.ForeignKey("sections.id"), nullable=False),
     sa.Column("name", sa.String, nullable=False),
     sa.Column("budget", MoneyType, nullable=False),
+    sa.Column("budget_pct", sa.String),  # decimal text; null when budget is fixed
     sa.Column("current", MoneyType, nullable=False),
     sa.Column("cap_kind", sa.String, nullable=False),  # finite | inf
     sa.Column("cap_value", MoneyType),  # null when infinite

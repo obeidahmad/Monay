@@ -127,10 +127,11 @@ SPECS: list[CommandSpec] = [
         (
             Arg("section", SECTION),
             Arg("name", WORD),
-            Arg("budget", AMOUNT, required=False),
+            Arg("budget", WORD, required=False),
             Arg("cap", CAP, required=False),
         ),
-        "Create a field (budget defaults 0; cap defaults ∞; pass a number or inf).",
+        "Create a field (budget defaults 0, an amount or NN% of the section's "
+        "AVAILABLE after fixed budgets; cap defaults ∞; pass a number or inf).",
         h.h_field_add,
     ),
     CommandSpec(
@@ -140,7 +141,8 @@ SPECS: list[CommandSpec] = [
             Arg("attr", CHOICE, choices=("budget", "max", "pocket", "name", "current")),
             Arg("value", WORD),
         ),
-        "Edit a field (max inf for ∞; current only in a first month).",
+        "Edit a field (budget takes an amount or NN%; max inf for ∞; "
+        "current only in a first month).",
         h.h_field_set,
     ),
     CommandSpec(

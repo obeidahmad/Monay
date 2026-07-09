@@ -13,7 +13,7 @@ from typing import Protocol
 
 import sqlalchemy as sa
 
-from . import m0001_initial
+from . import m0001_initial, m0002_field_budget_pct
 
 
 class Migration(Protocol):
@@ -24,4 +24,4 @@ class Migration(Protocol):
     def upgrade(self, conn: sa.Connection) -> None: ...
 
 
-ALL: list[Migration] = [m0001_initial]
+ALL: list[Migration] = [m0001_initial, m0002_field_budget_pct]

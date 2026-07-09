@@ -35,7 +35,7 @@ from monay.domain.entities import (
 from monay.domain.money import Money
 from monay.domain.month import Month
 from monay.tui import theme
-from monay.tui.format import cap_str, money_str, signed
+from monay.tui.format import budget_str, cap_str, money_str, signed
 
 _COLLAPSED = "▶"
 _EXPANDED = "▼"
@@ -199,7 +199,7 @@ def _field_table(s: Section) -> Table:
     for f in sorted(s.fields, key=lambda f: f.position):
         table.add_row(
             Text(f.name),
-            Text(money_str(f.budget)),
+            Text(budget_str(f)),
             signed(f.current),
             Text(money_str(f.paid)),
             signed(f.left),
