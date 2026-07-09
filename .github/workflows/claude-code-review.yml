@@ -33,14 +33,19 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1
+        # PINNED to the last known-good release (bundles Claude Code 2.1.202):
+        # CLI 2.1.205 broke plugin slash commands in print mode — the agent dies
+        # on turn 1 (is_error, 1 turn, $0) while the job still shows green (PRs
+        # #53/#54). The floating @v1 tag ships whatever CLI is current, so it
+        # reintroduces the break. Unpin (back to @v1) once
+        # anthropics/claude-code#76066 is fixed in the shipped CLI.
+        uses: anthropics/claude-code-action@f87768c6d25f92ae6efa7175e223ef77d4cbf97f
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # /code-review is BUNDLED with the Claude Code CLI since 2.1.20x — no
-          # plugin_marketplaces/plugins inputs. The old plugin invocation
-          # (/code-review:code-review via code-review@claude-code-plugins) died
-          # on turn 1 (is_error, $0) from CLI 2.1.203 on, while the job still
-          # showed green — see PR #53.
+          # The bundled /code-review skill does not exist in 2.1.202, so the
+          # review must stay on the marketplace plugin while the pin holds.
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
           # --append-system-prompt removes the model's run-to-run discretion:
           # without it the review sometimes consolidates everything into the
           # summary comment and never calls create_inline_comment (e.g. #39 got
@@ -52,7 +57,7 @@ jobs:
           # The --comment flag is what makes /code-review actually POST its
           # findings as inline PR comments (see anthropics/claude-code#26227).
           track_progress: true
-          prompt: '/code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
