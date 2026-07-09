@@ -36,8 +36,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
+          # /code-review is BUNDLED with the Claude Code CLI since 2.1.20x — no
+          # plugin_marketplaces/plugins inputs. The old plugin invocation
+          # (/code-review:code-review via code-review@claude-code-plugins) died
+          # on turn 1 (is_error, $0) from CLI 2.1.203 on, while the job still
+          # showed green — see PR #53.
           # --append-system-prompt removes the model's run-to-run discretion:
           # without it the review sometimes consolidates everything into the
           # summary comment and never calls create_inline_comment (e.g. #39 got
@@ -49,7 +52,7 @@ jobs:
           # The --comment flag is what makes /code-review actually POST its
           # findings as inline PR comments (see anthropics/claude-code#26227).
           track_progress: true
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
+          prompt: '/code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
 
