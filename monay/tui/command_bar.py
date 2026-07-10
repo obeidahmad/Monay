@@ -4,7 +4,9 @@ Ghost text comes from Textual's built-in suggester (a dimmed completion of the
 trailing token), fed by the registry-driven :func:`complete`. ``Tab`` accepts the
 ghost completion; pressing it again cycles through the other matching candidates
 in place, until you type (which resets the cycle). ``→`` also accepts (built in),
-``↑/↓`` recall history, and ``Esc`` clears the line.
+``↑/↓`` recall history, and ``Esc`` clears the line. A completion that rewrites
+the typed text instead of extending it (auto-quoting a multi-word name) can't
+show as ghost text and is reachable via Tab only.
 """
 
 from __future__ import annotations
@@ -36,7 +38,12 @@ class _RegistrySuggester(Suggester):
 
     async def get_suggestion(self, value: str) -> str | None:
         matches = complete(self._registry, self._names(), value)
-        return matches[0] if matches else None
+        # Textual renders suggestion[len(value):] verbatim after the typed text,
+        # so only a suggestion that extends it can show as ghost text; a quoted
+        # replacement (`… Long` -> `… "Long-Term …"`) is reachable via Tab.
+        if matches and matches[0].casefold().startswith(value.casefold()):
+            return matches[0]
+        return None
 
 
 class CommandBar(Input):

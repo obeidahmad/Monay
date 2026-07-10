@@ -11,8 +11,19 @@ NAMES = CompletionNames(
 )
 
 
+SPACEY = CompletionNames(
+    sections=("Long-Term Investing", "Needs"),
+    fields=("Emergency Cash", "Food"),
+    pockets=("Main",),
+)
+
+
 def comp(text: str) -> list[str]:
     return complete(REGISTRY, NAMES, text)
+
+
+def scomp(text: str) -> list[str]:
+    return complete(REGISTRY, SPACEY, text)
 
 
 def test_empty_and_whitespace_have_no_completion():
@@ -83,8 +94,50 @@ def test_day_token_is_ignored_when_indexing_args():
     assert comp("add Food d5 ") == []
 
 
-def test_quoted_partial_is_skipped():
+def test_open_quote_with_no_matching_name_completes_to_nothing():
     assert comp('field add Needs "Em') == []
+
+
+def test_closed_quote_in_trailing_token_is_skipped():
+    assert comp('add "Fo"') == []
+
+
+def test_multi_word_name_is_quoted_and_single_word_stays_bare():
+    assert scomp("section set ") == [
+        'section set "Long-Term Investing"',
+        "section set Needs",
+    ]
+
+
+def test_unquoted_partial_of_multi_word_name_becomes_quoted_replacement():
+    assert scomp("section set Long") == ['section set "Long-Term Investing"']
+
+
+def test_open_quote_partial_completes_and_closes_the_quote():
+    assert scomp('section set "Long') == ['section set "Long-Term Investing"']
+    assert scomp('section set "Long-Term Inv') == ['section set "Long-Term Investing"']
+    assert scomp("section set 'Long") == ["section set 'Long-Term Investing'"]
+
+
+def test_fully_typed_open_quoted_name_still_offers_the_closing_quote():
+    assert scomp('section set "Long-Term Investing') == [
+        'section set "Long-Term Investing"'
+    ]
+
+
+def test_next_arg_completes_after_a_balanced_quoted_name():
+    assert scomp('section set "Long-Term Investing" ') == [
+        'section set "Long-Term Investing" pct',
+        'section set "Long-Term Investing" amount',
+        'section set "Long-Term Investing" name',
+        'section set "Long-Term Investing" rest',
+    ]
+
+
+def test_quote_chars_in_names_force_quoting_and_escaping():
+    tricky = CompletionNames(sections=("Bob's", 'He said "hi"'))
+    matches = complete(REGISTRY, tricky, "section set ")
+    assert matches == ['section set "Bob\'s"', 'section set "He said \\"hi\\""']
 
 
 def test_tx_offers_subverbs_then_falls_back_to_free_filter():

@@ -6,6 +6,11 @@ choice argument's fixed options. The logic mirrors the parser (``parser.parse`` 
 ``_bind``) — the same two-token-path preference, the same ``dN`` day pull-out,
 the same argument order — so suggestions can never drift from what executes.
 
+Suggestions come back in their final parseable form: a name that ``shlex``
+would split or choke on (spaces, quotes, backslashes) is emitted double-quoted,
+so an accepted completion always executes. Typing inside an open quote
+completes too, closing the quote for you.
+
 Everything here is pure (no Textual, no I/O): the caller passes in the current
 names, and the TUI renders the result as ghost text and cycles it on Tab.
 """
@@ -27,6 +32,14 @@ from .registry import (
 )
 
 _DAY_RE = re.compile(r"^d(\d+)$", re.IGNORECASE)
+_NEEDS_QUOTES = re.compile(r"""[\s"'\\]""")
+
+
+def _quoted(cand: str) -> str:
+    """A candidate as it must be typed: quoted when shlex would split/choke on it."""
+    if not _NEEDS_QUOTES.search(cand):
+        return cand
+    return '"' + cand.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 @dataclass(frozen=True)
@@ -39,19 +52,22 @@ class CompletionNames:
 
 
 def complete(registry: CommandRegistry, names: CompletionNames, text: str) -> list[str]:
-    """Ordered completions of ``text`` (each one extends it), best first.
+    """Ordered full-line completions of ``text``, best first.
 
+    Each result is the whole line as it should read after accepting: names shlex
+    would split are auto-quoted, so a suggestion may *replace* an unquoted
+    partial rather than extend it (``… Long`` -> ``… "Long-Term Investing"``).
     Returns an empty list when nothing sensible can be completed: empty input, a
-    free-text/amount/number argument, or an unparseable or quoted trailing token.
+    free-text/amount/number argument, or an unparseable trailing token.
     """
     if not text.strip():
         return []
 
     # Split off the trailing token being completed, keeping the raw head text
-    # (its spacing/quotes) so each suggestion literally extends what's on screen.
-    head_text, partial = _split_trailing(text)
-    if "'" in partial or '"' in partial:
-        return []  # quoted-name completion is out of scope here
+    # (its spacing/quotes) so each suggestion builds on what's on screen.
+    head_text, partial, open_quote = _split_trailing(text)
+    if not open_quote and ("'" in partial or '"' in partial):
+        return []  # closed/embedded quote in the trailing token: out of scope
     try:
         head_tokens = shlex.split(head_text)
     except ValueError:
@@ -60,19 +76,45 @@ def complete(registry: CommandRegistry, names: CompletionNames, text: str) -> li
     low = partial.casefold()
     # _candidates returns the raw candidate set for this position; the prefix
     # filter (and the "nothing to add" exclusion) is applied here, once.
+    cands = _candidates(registry, names, head_tokens, low)
+    if open_quote:
+        # Inside an open quote: complete the name and close the quote. An
+        # exactly-typed name still completes — the closing quote is the
+        # addition — and names containing the opener itself are skipped.
+        return [
+            head_text + open_quote + cand + open_quote
+            for cand in cands
+            if open_quote not in cand and cand.casefold().startswith(low)
+        ]
     return [
-        head_text + cand
-        for cand in _candidates(registry, names, head_tokens, low)
+        head_text + _quoted(cand)
+        for cand in cands
         if cand.casefold().startswith(low) and cand.casefold() != low
     ]
 
 
-def _split_trailing(text: str) -> tuple[str, str]:
-    """``("section ", "")`` for a trailing space, else ``("section ", "ad")``."""
+def _split_trailing(text: str) -> tuple[str, str, str]:
+    """``(head_text, partial, open_quote)`` for the token being completed.
+
+    ``("section ", "", "")`` for a trailing space, ``("section ", "ad", "")``
+    mid-word, and ``("section set ", "Long-Term Inv", '"')`` when the trailing
+    token is an unclosed quote (the partial is what's inside it). head_text is
+    "" when completing the verb.
+    """
+    quote = ""
+    opened_at = 0
+    for i, ch in enumerate(text):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote, opened_at = ch, i
+    if quote:
+        return text[:opened_at], text[opened_at + 1 :], quote
     if text.endswith(" "):
-        return text, ""
+        return text, "", ""
     head, sep, partial = text.rpartition(" ")
-    return head + sep, partial  # head_text is "" when completing the verb
+    return head + sep, partial, ""
 
 
 def _candidates(
