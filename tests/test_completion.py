@@ -140,6 +140,16 @@ def test_quote_chars_in_names_force_quoting_and_escaping():
     assert matches == ['section set "Bob\'s"', 'section set "He said \\"hi\\""']
 
 
+def test_open_quote_escapes_backslashes_so_the_suggestion_reparses():
+    tricky = CompletionNames(sections=("Debt\\", "A\\B"))
+    # unescaped, a trailing \" would swallow the closing quote (shlex raises
+    # "No closing quotation") and \\ would collapse to \ — doubling round-trips
+    assert complete(REGISTRY, tricky, 'section set "Debt') == ['section set "Debt\\\\"']
+    assert complete(REGISTRY, tricky, 'section set "A') == ['section set "A\\\\B"']
+    # single quotes take backslashes literally: no doubling
+    assert complete(REGISTRY, tricky, "section set 'A") == ["section set 'A\\B'"]
+
+
 def test_tx_offers_subverbs_then_falls_back_to_free_filter():
     assert comp("tx ") == ["tx del", "tx edit"]
     assert comp("tx z") == []  # no subverb matches; the filter is free text

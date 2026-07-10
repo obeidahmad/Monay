@@ -42,6 +42,18 @@ def _quoted(cand: str) -> str:
     return '"' + cand.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def _requoted(cand: str, quote: str) -> str:
+    """``cand`` spliced back into its already-open ``quote``, closed.
+
+    Backslash is still an escape char inside shlex double quotes, so it is
+    doubled there (matching :func:`_quoted`); single quotes take everything
+    literally.
+    """
+    if quote == '"':
+        cand = cand.replace("\\", "\\\\")
+    return quote + cand + quote
+
+
 @dataclass(frozen=True)
 class CompletionNames:
     """The in-context names autocomplete can offer, most-relevant first."""
@@ -82,7 +94,7 @@ def complete(registry: CommandRegistry, names: CompletionNames, text: str) -> li
         # exactly-typed name still completes — the closing quote is the
         # addition — and names containing the opener itself are skipped.
         return [
-            head_text + open_quote + cand + open_quote
+            head_text + _requoted(cand, open_quote)
             for cand in cands
             if open_quote not in cand and cand.casefold().startswith(low)
         ]
