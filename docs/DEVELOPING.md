@@ -212,7 +212,9 @@ use case: load the active month → call an aggregate mutator → save → commi
 The **command layer** (`app/commands/`) is spec-driven: every command is one
 `CommandSpec` (`specs.py`) — path, argument schema, help, handler. The same
 specs drive the parser (`parser.py`), `help`, and (later) autocomplete, so they
-can never drift from execution. Handlers (`handlers.py`) are thin glue to
+can never drift from execution. Completion (`completion.py`) emits names in
+their final parseable form — names `shlex` would split are auto-quoted — so an
+accepted suggestion always executes. Handlers (`handlers.py`) are thin glue to
 `MonayApp`.
 
 **Adding a command:** add a `CommandSpec` in `specs.py`, write its `h_*` handler

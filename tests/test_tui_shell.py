@@ -267,6 +267,27 @@ async def _autocomplete_scenario() -> None:
         await pilot.press("tab")
         assert bar.value == "section set Needs"
 
+        # a multi-word name is inserted in its final parseable (quoted) form
+        await _type(pilot, app, 'section add post "Long Term" 0%')
+        bar.value = "section set "
+        await pilot.press("tab")
+        assert bar.value == "section set Needs"
+        await pilot.press("tab")
+        assert bar.value == 'section set "Long Term"'
+
+        # an unquoted partial of it completes via Tab (a quoted replacement),
+        # but can't render as ghost text since it doesn't extend the typed value
+        assert await bar.suggester.get_suggestion("section set Long") is None
+        bar.value = "section set Long"
+        await pilot.press("tab")
+        assert bar.value == 'section set "Long Term"'
+
+        # inside an open quote the suggestion extends the value, so ghost works
+        assert (
+            await bar.suggester.get_suggestion('section set "Long')
+            == 'section set "Long Term"'
+        )
+
         # nothing to complete (a free amount) leaves the line untouched, and Tab
         # is consumed so focus stays on the always-focused command bar
         bar.value = "add Needs "
