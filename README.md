@@ -91,8 +91,9 @@ A quick mental model — five ideas:
   - **Post-sections** split whatever's left by percentage; their percentages
     must sum to **100%** (e.g. Needs 50 / Wants 30 / Savings 20).
 - **Fields** are the budget lines inside a section. Each has a **BUDGET** (what
-  you feed it this month), a **CURRENT** pot (carried from last month), and a
-  **MAX** rollover cap (a number, or **∞**).
+  you feed it this month — a fixed amount, or a % of the section's AVAILABLE
+  remaining after its fixed budgets), a **CURRENT** pot (carried from last
+  month), and a **MAX** rollover cap (a number, or **∞**).
 - **Pockets** are where money physically sits (Main, Bank, Broker…). Each
   field belongs to one; a pocket's counter is the sum of its fields' balances —
   what you should actually have in that account.
@@ -126,6 +127,7 @@ section add post Wants 30%
 section add post Savings 20%
 
 field add Needs Groceries 300 400  # field with budget 300, max 400 (use `inf` for ∞)
+field add Savings Emergency 50%    # % budget: half of Savings' AVAILABLE after its fixed budgets
 field set  Groceries current 100   # type your carried-over pot (first month only)
 
 add Groceries 15.71+1.35 d5 weekly shop   # log a transaction (d5 = day 5; day defaults to today)

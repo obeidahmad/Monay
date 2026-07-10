@@ -85,6 +85,39 @@ def test_field_set_variants():
     assert app.active_month().field("Need", "Transit").budget == Money("50")
 
 
+# --- % field budgets -------------------------------------------------------
+def test_field_add_with_percentage_budget():
+    app, run = make_budget()  # income 1000, Need is 50% post -> AVAILABLE 500
+    run("field add Need Rent 300")
+    assert run("field add Need Emergency 50% 400").status == "ok"
+    f = app.active_month().field("Need", "Emergency")
+    assert f.budget_pct == Percentage(50)
+    assert f.budget == Money("100")  # 50% of (500 - 300 fixed)
+    assert f.cap == Cap.finite("400")  # the cap arg still parses after a %
+
+
+def test_field_set_budget_percentage_round_trip():
+    app, run = make_budget()
+    run("field add Need Emergency")
+    assert run("field set Emergency budget 50%").status == "ok"
+    f = app.active_month().field("Need", "Emergency")
+    assert f.budget_pct == Percentage(50)
+    assert f.budget == Money("250")  # 50% of 500, no fixed budgets
+
+    assert run("field set Emergency budget 200").status == "ok"
+    f = app.active_month().field("Need", "Emergency")
+    assert f.budget_pct is None
+    assert f.budget == Money("200")
+
+
+def test_field_budget_percentage_out_of_range():
+    app, run = make_budget()
+    run("field add Need Emergency")
+    r = run("field set Emergency budget 150%")
+    assert r.status == "error"
+    assert "0–100" in r.message
+
+
 # --- transfer (incl. over-MAX refusal) -----------------------------------
 def test_transfer_and_cap_refusal():
     app, run = make_budget()

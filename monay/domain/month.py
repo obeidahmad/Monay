@@ -90,6 +90,7 @@ class Month:
 
         self._recompute_paid()
         unallocated = self._allocate_sections()
+        self._resolve_field_budgets()
         self._recompute_fields_and_rest()
         self._apply_transfers()
         self._recompute_pockets(unallocated)
@@ -146,6 +147,27 @@ class Month:
             post_shares = post_shares + share
 
         return remaining - post_shares  # income left in no section
+
+    def _resolve_field_budgets(self) -> None:
+        """Turn each %-field's percentage into a BUDGET amount.
+
+        The base is the section's AVAILABLE minus its fixed budgets, clamped at
+        zero (a section in deficit resolves every %-budget to 0 — budgets are
+        never negative). Every %-field shares the same base, so resolution is
+        order-independent. The result is floored to whole cents: a budget is
+        directly spendable money, and flooring means %-fields can never sum
+        past the base — the shaved fraction stays in the section's REST.
+        """
+        for s in self.sections:
+            fixed = sum(
+                (f.budget for f in s.fields if f.budget_pct is None), Money.zero()
+            )
+            base = s.available - fixed
+            if base.is_negative:
+                base = Money.zero()
+            for f in s.fields:
+                if f.budget_pct is not None:
+                    f.budget = f.budget_pct.of(base).floor_cents()
 
     def _recompute_fields_and_rest(self) -> None:
         for s in self.sections:
@@ -323,7 +345,7 @@ class Month:
         self,
         section_name: str,
         name: str,
-        budget: Money | Numeric,
+        budget: Money | Numeric | Percentage,
         cap: Cap,
         pocket_name: str,
         current: Money | Numeric | None = None,
@@ -336,13 +358,18 @@ class Month:
             )
         if not isinstance(cap, Cap):
             raise ValidationError("cap must be a Cap")
+        if isinstance(budget, Percentage):
+            initial, pct = Money.zero(), budget
+        else:
+            initial, pct = self._nonneg(budget, "budget"), None
         f = Field(
             name=name,
-            budget=self._nonneg(budget, "budget"),
+            budget=initial,
             current=Money.zero() if current is None else money(current),
             cap=cap,
             pocket=self.pocket(pocket_name),
             position=len(s.fields),
+            budget_pct=pct,
         )
         s.fields.append(f)
         self.recompute()
@@ -369,10 +396,15 @@ class Month:
         self.recompute()
 
     def set_field_budget(
-        self, section_name: str, name: str, budget: Money | Numeric
+        self, section_name: str, name: str, budget: Money | Numeric | Percentage
     ) -> None:
         self._require_open()
-        self.field(section_name, name).budget = self._nonneg(budget, "budget")
+        f = self.field(section_name, name)
+        if isinstance(budget, Percentage):
+            f.budget_pct = budget  # recompute resolves f.budget from it
+        else:
+            f.budget = self._nonneg(budget, "budget")
+            f.budget_pct = None  # switching kinds clears the other
         self.recompute()
 
     def set_field_cap(self, section_name: str, name: str, cap: Cap) -> None:

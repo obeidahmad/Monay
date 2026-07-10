@@ -10,7 +10,7 @@ no float ever touches a value (floats are rejected outright).
 from __future__ import annotations
 
 import functools
-from decimal import ROUND_HALF_EVEN, Decimal, InvalidOperation
+from decimal import ROUND_DOWN, ROUND_HALF_EVEN, Decimal, InvalidOperation
 from typing import Final
 
 from .errors import ValidationError
@@ -78,6 +78,16 @@ class Money:
     def display(self) -> Decimal:
         """Cosmetic 2dp value for the UI (banker's rounding)."""
         return self._amount.quantize(TWO_PLACES, rounding=ROUNDING)
+
+    def floor_cents(self) -> Money:
+        """This amount rounded *down* to whole cents.
+
+        For values handed to the user as directly spendable (resolved %-field
+        budgets): flooring guarantees a set of shares never sums past its base,
+        so the unusable fraction stays in the section instead of over-allocating
+        it by a cent.
+        """
+        return Money(self._amount.quantize(TWO_PLACES, rounding=ROUND_DOWN))
 
     @property
     def is_zero(self) -> bool:

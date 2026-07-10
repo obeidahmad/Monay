@@ -7,7 +7,7 @@ from dependency_injector import providers
 from rich.console import Console
 
 from monay.bootstrap import build_container
-from monay.domain.values import Percentage, RestRouting
+from monay.domain.values import Cap, Percentage, RestRouting
 from monay.tui.app import Monay
 from monay.tui.command_bar import CommandBar
 from monay.tui.widgets import accordion
@@ -64,6 +64,14 @@ def test_expanded_section_shows_fields_columns_inline():
     assert "350.00" in text  # Groceries LEFT
     assert "∞" in text  # Dining's infinite cap
     assert "Budget" in text and "Pocket" in text  # column headers
+
+
+def test_expanded_section_shows_pct_budget_with_resolved_amount():
+    m = _sample()  # Needs: AVAILABLE 750, fixed budgets 300 + 50 + 100
+    m.add_field("Needs", "Buffer", Percentage(50), Cap.infinite(), "Main")
+    text = render_text(accordion.build(m, {"Needs"}))
+    assert "50% → 150.00" in text  # 50% of (750 − 450)
+    assert "300.00" in text  # fixed budgets keep their plain rendering
 
 
 def test_rows_show_rest_routing_even_when_collapsed():

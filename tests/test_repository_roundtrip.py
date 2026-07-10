@@ -6,15 +6,17 @@ closed-month write guard, and migration idempotency.
 """
 
 import pytest
+import sqlalchemy as sa
 
 from monay.data.db import make_engine, run_migrations
+from monay.data.schema import schema_version
 from monay.data.unit_of_work import SqlAlchemyUnitOfWork
 from monay.domain.closing import MonthCloser
 from monay.domain.entities import Profile
 from monay.domain.errors import MonthClosedError
 from monay.domain.money import Money
 from monay.domain.ports import MonthRepository, ProfileRepository, UnitOfWork
-from monay.domain.values import Cap, MonthKey
+from monay.domain.values import Cap, MonthKey, Percentage
 from tests.fixtures.sample_budget import build_sample
 
 
@@ -134,3 +136,39 @@ def test_migrations_idempotent(engine):
     pid = _seed(engine)
     with SqlAlchemyUnitOfWork(engine) as uow:
         assert uow.months.get(pid, MonthKey(2025, 1)) is not None
+
+
+def test_pct_field_roundtrip(engine):
+    pid = _seed(engine)
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        month = uow.months.get(pid, MonthKey(2025, 1))
+        month.add_field("Savings", "Vacation", Percentage(50), Cap.infinite(), "Main")
+        uow.months.save(month)
+        uow.commit()
+
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        loaded = uow.months.get(pid, MonthKey(2025, 1))
+    f = loaded.field("Savings", "Vacation")
+    assert f.budget_pct == Percentage(50)
+    # get() recomputes, so the budget comes back resolved: Savings AVAILABLE is
+    # 300 (20% of 1500), its fixed budgets 100 + 140 -> 50% of 60 = 30.
+    assert f.budget == money("30")
+    assert loaded.field("Savings", "Emergency").budget_pct is None  # fixed untouched
+
+
+def test_migration_from_v1_adds_budget_pct(engine):
+    pid = _seed(engine)
+    # Rewind to a v1 database: drop the column m0002 adds and reset the version.
+    with engine.begin() as conn:
+        conn.exec_driver_sql("ALTER TABLE fields DROP COLUMN budget_pct")
+        conn.execute(sa.delete(schema_version))
+        conn.execute(schema_version.insert().values(version=1))
+
+    run_migrations(engine)
+
+    with engine.begin() as conn:
+        columns = {c["name"] for c in sa.inspect(conn).get_columns("fields")}
+    assert "budget_pct" in columns
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        loaded = uow.months.get(pid, MonthKey(2025, 1))  # legacy rows load as fixed
+    assert all(f.budget_pct is None for s in loaded.sections for f in s.fields)

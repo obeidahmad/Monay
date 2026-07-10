@@ -72,7 +72,12 @@ class Income:
 
 @dataclass
 class Field:
-    """A budget line inside a section. CONSUMED/LEFT/PAID are computed."""
+    """A budget line inside a section. CONSUMED/LEFT/PAID are computed.
+
+    ``budget`` is a raw input for fixed fields; when ``budget_pct`` is set the
+    field budgets by percentage and ``budget`` is *computed* each recompute as
+    that % of the section's AVAILABLE remaining after its fixed budgets.
+    """
 
     name: str
     budget: Money
@@ -81,6 +86,7 @@ class Field:
     pocket: Pocket
     position: int = 0
     id: int | None = None
+    budget_pct: Percentage | None = None
     # computed by Month.recompute()
     paid: Money = dc_field(default_factory=Money.zero)
     left: Money = dc_field(default_factory=Money.zero)

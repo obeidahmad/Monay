@@ -28,6 +28,10 @@ def _percentage(token: str) -> Percentage:
     return Percentage(token[:-1] if token.endswith("%") else token)
 
 
+def _budget(token: str) -> Money | Percentage:
+    return _percentage(token) if token.endswith("%") else evaluate(token)
+
+
 def _routing(token: str) -> RestRouting:
     low = token.lower()
     if low == "income":
@@ -118,7 +122,7 @@ def h_section_del(app: MonayApp, a: Args) -> Result:
 
 # --- fields ---------------------------------------------------------------
 def h_field_add(app: MonayApp, a: Args) -> Result:
-    budget = a["budget"] if a["budget"] is not None else Money("0")
+    budget = _budget(a["budget"]) if a["budget"] is not None else Money("0")
     cap = _cap(a["cap"]) if a["cap"] is not None else Cap.infinite()
     m = app.add_field(a["section"], a["name"], budget, cap)
     return Result.ok(f"✓ field {a['name']} added to {a['section']}", m)
@@ -127,7 +131,7 @@ def h_field_add(app: MonayApp, a: Args) -> Result:
 def h_field_set(app: MonayApp, a: Args) -> Result:
     attr, name, value = a["attr"], a["name"], a["value"]
     if attr == "budget":
-        m = app.set_field_budget(name, evaluate(value))
+        m = app.set_field_budget(name, _budget(value))
     elif attr == "max":
         m = app.set_field_cap(name, _cap(value))
     elif attr == "pocket":

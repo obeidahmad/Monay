@@ -115,6 +115,23 @@ LEFT     = min(CURRENT + BUDGET − PAID, MAX)      (no cap if MAX = ∞)
 CONSUMED = LEFT − CURRENT + PAID                  (what it took from the section)
 ```
 
+A field's BUDGET is a fixed amount, or a % (`budget_pct`) resolved each
+recompute — after sections get their AVAILABLE, before LEFT — as:
+
+```
+BUDGET   = pct × max(AVAILABLE − Σ fixed budgets in the section, 0)
+           floored to whole cents (50% of 250.25 → 125.12)
+```
+
+Unlike section slices (kept at the full 4dp), a resolved budget is directly
+spendable money, so it is quantized to 2dp with `Money.floor_cents` —
+flooring, never rounding up, so %-fields can never sum past their base; the
+shaved fraction stays in the section's REST and rolls over. Every %-field
+shares that same base, so resolution is order-independent; a negative base
+(fixed budgets exceed AVAILABLE — or AVAILABLE itself is negative) resolves
+every %-budget to 0, the deficit staying visible through BUDGET LEFT and the
+negative-REST warning.
+
 **FRESH INCOME** = Σ income that is not a leftover (`IncomeKind.LEFTOVER`).
 Leftovers were already taxed when they first arrived last month, so they are
 excluded from the tax base; `total_income` still includes them.

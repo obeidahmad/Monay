@@ -61,7 +61,7 @@ PercentageInput = int | str | Decimal
 
 @dataclass(frozen=True)
 class Percentage:
-    """A section's share of income, validated to 0–100."""
+    """A share of an amount (section income slice, field budget), 0–100."""
 
     value: Decimal
 

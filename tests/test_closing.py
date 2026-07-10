@@ -7,7 +7,7 @@ from monay.domain.entities import IncomeKind
 from monay.domain.errors import MonthClosedError
 from monay.domain.money import Money
 from monay.domain.month import MonthState
-from monay.domain.values import MonthKey
+from monay.domain.values import Cap, MonthKey, Percentage
 from tests.fixtures.sample_budget import build_sample
 
 
@@ -96,3 +96,21 @@ def test_pockets_copied(closed):
     _, nxt = closed
     assert {p.name for p in nxt.pockets} == {"Main", "Bank", "Broker"}
     assert nxt.pocket("Main").is_default
+
+
+def test_pct_budget_carried_and_reresolved():
+    month = build_sample()
+    month.add_field("Savings", "Vacation", Percentage(50), Cap.infinite(), "Main")
+    # 50% of (AVAILABLE 300 − fixed budgets 100 + 140)
+    assert month.field("Savings", "Vacation").budget == money("30")
+
+    nxt = MonthCloser().close(month)
+    nf = nxt.field("Savings", "Vacation")
+    assert nf.budget_pct == Percentage(50)
+    assert nf.current == money("30")  # its pot still rolls over like any field
+    # ...and the budget is re-resolved against the *new* month, not copied:
+    # Savings AVAILABLE is now 30 (20% of the 150 left after Bills' 500 from
+    # the 650 leftovers) + its 30 carried REST = 60, below the 240 of copied
+    # fixed budgets — so the base clamps and the % resolves to zero.
+    assert nxt.section("Savings").available == money("60")
+    assert nf.budget == money("0")
