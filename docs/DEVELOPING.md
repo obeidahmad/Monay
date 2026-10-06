@@ -1,7 +1,7 @@
 # Monay — Developer Guide
 
 How the code is organized and how the pieces fit, for anyone reading or
-modifying Monay. (User-facing concepts and commands live in the
+modifying Monay. (User-facing concepts and how to use the app live in the
 [README](../README.md); how to cut a release is in [RELEASING.md](RELEASING.md).)
 
 ---
@@ -11,9 +11,9 @@ modifying Monay. (User-facing concepts and commands live in the
 Strict one-directional layering — nothing lower imports anything higher:
 
 ```
-┌─ tui/     Textual: tab strip, command bar, screens, rendering
+┌─ web/    FastAPI JSON API + presenter; serves the React UI (repo-root web/)
 │      │ calls down
-├─ app/    application services (use cases) + the command registry
+├─ app/    application services (use cases) + input interpreters
 │      │ depends on PORTS only
 ├─ domain/ PURE Python: value objects, entities, the Month aggregate, the
 │      │   budget math, domain services, and the repository/UoW PORTS
@@ -22,7 +22,7 @@ Strict one-directional layering — nothing lower imports anything higher:
            implement the domain ports; schema; migrations
 ```
 
-- **`domain/` is pure** — no SQLAlchemy, no Textual, no I/O. It *defines* the
+- **`domain/` is pure** — no SQLAlchemy, no web framework, no I/O. It *defines* the
   ports (typing `Protocol`s); it never imports `data/`.
 - **`data/` implements those ports.** `data/` imports `domain/`, never the
   reverse. Dependencies point inward.
@@ -34,7 +34,7 @@ Strict one-directional layering — nothing lower imports anything higher:
 
 ```
 monay/
-  __main__.py        entry point: build the container, run the app
+  __main__.py        entry point: build the container, serve the web app
   bootstrap.py       dependency-injector Container (composition root)
 
   domain/            (pure)
@@ -58,16 +58,16 @@ monay/
   app/
     services.py      MonayApp — the session-bearing use-case facade
     clock.py         SystemClock adapter
-    errors.py        application/command errors
-    commands/        registry.py · parser.py · specs.py · handlers.py
+    errors.py        application errors
+    inputs.py        typed text → values (amounts, NN%, inf caps, routing)
 
-  tui/
-    app.py           Monay(App): shell, two-pane tabs, context bar, feedback, loop
-    command_bar.py   the input widget (history, Esc-clear)
-    theme.py         palette / section accents / column colors
-    format.py        money formatting helpers
-    screens/         budget · transactions · pockets · settings · docs · history
-    widgets/         accordion · divider
+  web/
+    api.py           FastAPI app: JSON endpoints over MonayApp + static UI
+    presenter.py     domain → JSON view models (money as 2dp strings)
+    static/          the built React bundle (gitignored; `npm run build`)
+
+web/                 (repo root) the React + Vite + TypeScript frontend
+  src/               App · pages · sheets · ui primitives · styles (design tokens)
 ```
 
 ---
@@ -138,7 +138,7 @@ excluded from the tax base; `total_income` still includes them.
 
 On the Budget tab, income is shown as a synthetic **income pseudo-section** — a
 distinct row above the real sections carrying `total_income`, expandable (like any
-section, via `expand income` or a click) to list the individual entries. It is not
+section, by clicking it) to list the individual entries. It is not
 a real `Section` (the name `income` is reserved, so no section can shadow it); it
 just renders income on the same tab whether or not any section exists yet.
 
@@ -200,47 +200,52 @@ from `recompute()`). Migrations are forward-only modules under
 
 A `dependency-injector` container: `Singleton` engine (migrated on build) and
 `Clock`; `Factory` `UnitOfWork`; `Singleton` `MonayApp` (the session) and the
-command registry. Tests swap any provider with a one-line `.override(...)` — the
-in-memory `FakeUnitOfWork` makes service tests DB-free.
+FastAPI `web_app` built over it. Tests swap any provider with a one-line
+`.override(...)` — the in-memory `FakeUnitOfWork` makes service tests DB-free.
 
 ## 6. Application layer
 
 `MonayApp` (`app/services.py`) is the use-case facade. It holds the session
 (current profile + the month being viewed) and depends only on the ports. Each
 use case: load the active month → call an aggregate mutator → save → commit.
+Multi-attribute edits (`edit_field`, `edit_section`, `edit_pocket`) apply every
+change in one unit of work, so a form save is all-or-nothing. Field use cases
+take an optional `section=` so same-named fields in different sections are
+addressable (the web UI always passes it).
 
-The **command layer** (`app/commands/`) is spec-driven: every command is one
-`CommandSpec` (`specs.py`) — path, argument schema, help, handler. The same
-specs drive the parser (`parser.py`), `help`, and (later) autocomplete, so they
-can never drift from execution. Completion (`completion.py`) emits names in
-their final parseable form — names `shlex` would split are auto-quoted — so an
-accepted suggestion always executes. Handlers (`handlers.py`) are thin glue to
-`MonayApp`.
+`app/inputs.py` turns user-typed text into value objects: arithmetic amounts
+(`15.71+1.35`), `NN%` budgets/allocations, `inf`/blank caps, and
+`income`/`self`/`<section>` REST routing.
 
-**Adding a command:** add a `CommandSpec` in `specs.py`, write its `h_*` handler
-in `handlers.py`, and add the use case to `MonayApp` if needed. Parser, help,
-and autocomplete pick it up automatically.
+## 7. Web layer (`web/` + the React app)
 
-## 7. TUI
+The UI is a React app (Vite + TypeScript, source in the repo-root `web/`)
+served by a FastAPI app (`monay/web/api.py`). Python stays the engine:
 
-`Monay(App)` (`tui/app.py`) hosts the context bar (month · state · profile), a
-two-pane body, the feedback line, and the command bar. The body has a **left
-pane** of working tabs (budget · transactions · pockets · settings) and a **right
-pane** of helper tabs (docs · history); `Ctrl+B` toggles the right pane and a
-draggable `PaneDivider` (`widgets/divider.py`) — or `Ctrl+←`/`Ctrl+→` — resizes
-it (`_set_helper_width` clamps the split). The command loop is: parse via the
-registry → run against `MonayApp` → render the
-result (✓ / ✗ / a typed `Yes`/`No` confirmation). The Docs tab (`screens/docs.py`)
-renders the man-style reference straight from `REGISTRY.specs()`, so it never
-drifts from what the app accepts; `help` selects it (`help <command>` filters it).
-Tab screens build Rich renderables; `format.py` + `theme.py` handle colors. The
-Budget tab is an **accordion** (`widgets/accordion.py`): one summary row per
-section (plus the income pseudo-section), any number expandable inline to their
-field table. A row's name carries its toggle target in cell metadata (a custom
-key, not Rich's `@click` — which would override the accent color and underline the
-name); the app's `on_click` reads that meta to toggle the row, and
-`expand`/`collapse` do the same from the command bar. The set of open rows lives
-in `MonayApp.expanded_sections`.
+- **`monay/web/api.py`** — a thin JSON adapter over `MonayApp`. Every mutating
+  endpoint is a `POST` with identifiers (section/field/pocket names, the
+  transaction `#`) in the JSON body, so any name is addressable. Each returns the
+  whole fresh UI state; domain/app errors become `400 {"detail": …}` (a refused
+  transfer adds `"allowed"`). `POST /api/evaluate` previews amount expressions.
+  Endpoints are `async` so they run one at a time on the event loop — the single
+  session in `MonayApp` is never mutated concurrently (Monay is local and
+  single-user).
+- **`monay/web/presenter.py`** — domain → JSON view models. Money travels as
+  2-decimal strings, and every derived figure the UI shows (post pool, Σ%,
+  routing labels, pocket breakdowns) is computed here, so the frontend never does
+  budget math.
+- **The frontend** (`web/src/`) — `App.tsx` (shell, navigation, toasts, close
+  flow), `pages.tsx` (Budget accordion, Transactions, Pockets, Settings, History,
+  Help), `sheets.tsx` (one form Sheet per action), `ui.tsx` (design-system
+  primitives), `styles.css` (the Monay design-system tokens: glass, Manrope,
+  section accents, dark + light). UI-only state (active tab, expanded sections,
+  theme) lives in the browser's `localStorage`, never in the engine.
+- `npm run build` writes the bundle to `monay/web/static/` (gitignored), which
+  the FastAPI app serves with an SPA fallback; without a build, `/` shows a hint.
+
+**Adding an action:** add the use case to `MonayApp`, an endpoint in `api.py`
+(parse text with `app/inputs.py`), any new view data in `presenter.py`, then a
+Sheet/button in the frontend.
 
 ---
 
@@ -257,9 +262,9 @@ uv run pytest tests/test_recompute.py # the engine's keystone test
 | `Month.recompute` | the sample budget, hand-verified | no |
 | `MonthCloser` | close the sample → next month | no |
 | Mutators & invariants | edge cases (cap, negative carry, advance, guards) | no |
-| Application services | parsed command strings on a **fake UoW** | no |
+| Application services | use cases on a **fake UoW** | no |
 | SQLAlchemy adapters | round-trip + guards on `:memory:` | yes |
-| TUI | Textual `run_test()` smoke | fake |
+| Web API + presenter | FastAPI `TestClient` on in-memory SQLite | yes |
 
 `tests/fixtures/sample_budget.py` is a small, neutral budget with round numbers,
 designed so every value is hand-verifiable against §3's formulas while
@@ -268,9 +273,15 @@ exercising the interesting behaviors.
 ## 9. Running & building
 
 ```
-uv sync                  # dev environment (fetches Python 3.14)
-uv run python -m monay   # run the app
+uv sync                            # Python environment (fetches Python 3.14)
+cd web && npm install && npm run build && cd ..   # build the React UI once
+uv run python -m monay             # serve on http://localhost:8765, opens a browser
 ```
 
-Standalone binaries are produced by PyInstaller (`monay.spec`) and CI
+For frontend work, run the engine with `MONAY_NO_BROWSER=1 uv run python -m monay`
+and, in `web/`, `npm run dev` — Vite serves the UI with hot reload and proxies
+`/api` to the engine. `MONAY_PORT` / `MONAY_HOST` change where Monay listens.
+
+Standalone binaries (the engine plus the built UI) are produced by PyInstaller
+(`monay.spec`, after `npm run build`) and CI
 (`.github/workflows/build.yml`); see the README's build section.

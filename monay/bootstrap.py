@@ -1,10 +1,10 @@
 """Composition root — the one place that names concrete types and wires them.
 
 A ``dependency-injector`` container (docs/DEVELOPING.md): a ``Singleton``
-engine (one ``monay.db``) and ``Clock``, and a ``Factory`` Unit of Work (a fresh
-transaction per use case). Application-service and app providers are added as
-those types arrive (Phases 8–9). Tests swap any provider with a one-line
-``.override(...)`` — e.g. the in-memory ``FakeUnitOfWork``.
+engine (one ``monay.db``) and ``Clock``, a ``Factory`` Unit of Work (a fresh
+transaction per use case), the ``MonayApp`` facade, and the FastAPI web app.
+Tests swap any provider with a one-line ``.override(...)`` — e.g. the in-memory
+``FakeUnitOfWork``.
 """
 
 from __future__ import annotations
@@ -12,10 +12,10 @@ from __future__ import annotations
 from dependency_injector import containers, providers
 
 from monay.app.clock import SystemClock
-from monay.app.commands import build_registry
 from monay.app.services import MonayApp
 from monay.data.db import make_engine, run_migrations
 from monay.data.unit_of_work import SqlAlchemyUnitOfWork
+from monay.web.api import create_app
 
 
 class Container(containers.DeclarativeContainer):
@@ -30,7 +30,8 @@ class Container(containers.DeclarativeContainer):
     app_service = providers.Singleton(
         MonayApp, uow_factory=unit_of_work.provider, clock=clock
     )
-    registry = providers.Singleton(build_registry)
+    # The FastAPI app (API + the built React frontend) over that facade.
+    web_app = providers.Singleton(create_app, service=app_service)
 
 
 def build_container(db_url: str = "sqlite:///monay.db") -> Container:

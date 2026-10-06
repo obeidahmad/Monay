@@ -5,19 +5,20 @@ build-backend = "hatchling.build"
 [project]
 name = "monay"
 dynamic = ["version"] # derived from the git tag by hatch-vcs (see docs/RELEASING.md)
-description = "A modern terminal budget app with monthly rollover logic."
+description = "A web budget app with monthly rollover logic."
 requires-python = ">=3.14"
 dependencies = [
-    "textual>=8.2.7",
     "sqlalchemy>=2.0",
     "dependency-injector>=4.49",
+    "fastapi>=0.142.2",
+    "uvicorn>=0.54.0",
 ]
 
 [dependency-groups]
 # Opt-in (not synced by default): packages the app into a standalone binary so
 # end users run a single download with no Python/deps. Build per-OS (PyInstaller
 # can't cross-compile): `uv run --group build pyinstaller ...`. Verified bundling
-# textual + sqlalchemy + dependency-injector on 3.14. See docs/ARCHITECTURE.md §11.
+# fastapi/uvicorn + sqlalchemy + dependency-injector on 3.14; build web/ first.
 build = [
     "pyinstaller>=6.20.0",
 ]
@@ -26,11 +27,12 @@ dev = [
     "openpyxl>=3.1", # only for the throwaway legacy_excel/ inspection scripts; app never imports Excel
     "ruff>=0.9",
     "mypy>=1.18",
+    "httpx>=0.28.1",
 ]
 
 # Not a distributable package (yet): uv just manages the environment.
 # Flip to a packaged project (add a build backend + [project.scripts]) when the
-# TUI entry point lands.
+# web entry point is packaged.
 # Version comes from the git tag — no hand-maintained version string anywhere.
 # hatch-vcs resolves it at build time and writes monay/_version.py (gitignored),
 # which the frozen PyInstaller binary imports at runtime.

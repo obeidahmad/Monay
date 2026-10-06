@@ -1,18 +1,14 @@
-"""Application-layer errors (command parsing & session), distinct from domain errors."""
+"""Application-layer errors (session & use-case usage), distinct from domain errors."""
 
 from __future__ import annotations
 
 
 class AppError(Exception):
-    """Base for application/command errors."""
-
-
-class UnknownCommandError(AppError):
-    """The first token doesn't match any command."""
+    """Base for application errors."""
 
 
 class BadUsageError(AppError):
-    """A command was recognized but its arguments are wrong."""
+    """A use case was called with arguments it can't act on."""
 
 
 class NoProfileError(AppError):

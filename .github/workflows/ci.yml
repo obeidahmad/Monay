@@ -1,6 +1,7 @@
 name: ci
 
-# The HARD merge gate: lint + format + type check + tests must pass on every PR
+# The HARD merge gate: lint + format + type check + tests (and the web UI's
+# type check + build) must pass on every PR
 # and on every push to main. build.yml stays separate — it only runs on version
 # tags to cut binary releases.
 on:
@@ -37,3 +38,24 @@ jobs:
 
       - name: Tests
         run: uv run pytest
+
+  web:
+    name: web UI type check + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Type check + build
+        run: npm run build

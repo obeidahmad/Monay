@@ -9,5 +9,5 @@ def test_package_imports():
 
 
 def test_layer_packages_import():
-    for pkg in ("monay.domain", "monay.data", "monay.app", "monay.tui"):
+    for pkg in ("monay.domain", "monay.data", "monay.app", "monay.web"):
         assert importlib.import_module(pkg) is not None

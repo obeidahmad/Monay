@@ -2,40 +2,26 @@
 
 # 💰 Monay
 
-**A modern terminal app for zero-based budgeting — with monthly rollover, pockets, and a flexible section model.**
+**A calm web app for zero-based budgeting — with monthly rollover, pockets, and a flexible section model.**
 
-Built with Python 3.14 · a pure budgeting engine behind a [Textual](https://textual.textualize.io/) terminal UI.
+Built with Python 3.14 · a pure budgeting engine behind a [FastAPI](https://fastapi.tiangolo.com/) API and a [React](https://react.dev/) UI.
 
 ![Python](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)
-![Textual](https://img.shields.io/badge/TUI-Textual-5A4FCF)
+![React](https://img.shields.io/badge/UI-React-61DAFB?logo=react&logoColor=black)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
 
 ---
 
-Monay brings **zero-based, envelope-style budgeting** to the terminal — give
+Monay brings **zero-based, envelope-style budgeting** to your browser — give
 every dollar a job, then watch what you don't spend roll forward in its pot.
 You define your own **sections** and **fields**, log spending as you go, and at
 month-end **close** the month — unused money rolls forward, pots carry over, and
 the next month is created for you automatically.
 
-```
- Monay  ┃ Budget ┃ Transactions │ Pockets │ Settings      Docs │ History
-─────────────────────────────────────────────────────────────────
- January 2025   ● open                           Profile: alex
-─────────────────────────────────────────────────────────────────
- SECTIONS                              avail        rest
- ▍Bills      pre · 500                500.00        0.00
- ▍Needs      post · 50%               750.00      350.00
- ▍Wants      post · 30%               450.00      300.00
- ▍Savings    post · 20%               300.00       60.00
-                                  ──────────
- income 2000.00 · post pool 1500.00 · Σ% = 100 ✓
-─────────────────────────────────────────────────────────────────
- ✓ Groceries −17.06 → LEFT 332.94 (Needs REST 350.00)
- > _
-```
+Monay runs locally: one command starts the engine and opens the app in your
+browser. Your data stays in a `monay.db` file on your machine.
 
 ## ✨ Features
 
@@ -44,16 +30,16 @@ the next month is created for you automatically.
 - **Pockets** — per-account "how much should I have here right now?" counters, so you can reconcile against reality.
 - **Borrowing, modeled honestly** — fields and sections can go negative (red) and heal over future months; supports one-time "advance" budgets.
 - **Expressions everywhere** — type `15.71+1.35` or `(7.81)/2+6.5` for any amount.
-- **Command-driven** — everything happens by typing bare-verb commands in one bar; arrows are only for navigation.
+- **Point and click** — add, edit and remove everything with buttons and forms; an accordion Budget view, live expression previews, and dark + light modes. Works on desktop and phone-sized screens.
 - **Money done right** — `Decimal`, 4-decimal storage with banker's rounding; no floats ever touch a value.
 - **Multiple profiles** — fully independent budgets in one app.
 
 ## 🚀 Install & run
 
-### Standalone binary (no Python needed)
+### Standalone binary (no Python or Node needed)
 
 Download the binary for your OS/arch from the [**Releases**](../../releases)
-page, then run it from a terminal:
+page, then run it:
 
 ```bash
 # Linux / macOS
@@ -64,19 +50,26 @@ chmod +x monay-linux-x86_64
 .\monay-windows-x86_64.exe
 ```
 
+Monay starts a local server and opens **http://localhost:8765** in your
+browser (press `Ctrl+C` in the terminal to stop it).
+
 > Monay stores your data in a `monay.db` file in the **current working
 > directory**, so run it from a folder you'll remember.
 
 ### From source (developers)
 
-Monay uses [**uv**](https://docs.astral.sh/uv/) for environment and dependency
-management.
+Monay uses [**uv**](https://docs.astral.sh/uv/) for the Python engine and
+**npm** (Node 20+) for the web UI.
 
 ```bash
-uv sync                      # create the venv + install deps (fetches Python 3.14)
-uv run python -m monay       # launch the app
-uv run pytest                # run the test suite
+uv sync                                  # create the venv + install deps (fetches Python 3.14)
+(cd web && npm install && npm run build) # build the React UI into monay/web/static
+uv run python -m monay                   # launch: serves the app and opens your browser
+uv run pytest                            # run the test suite
 ```
+
+`MONAY_PORT` / `MONAY_HOST` change where it listens; `MONAY_NO_BROWSER=1` skips
+opening a browser tab.
 
 ## 🧩 Concepts
 
@@ -111,81 +104,64 @@ close routes to next month's income, back into the section, or into another one.
 
 ## 📖 Using Monay
 
-Everything is a typed command. Names are case-insensitive; quote names with
-spaces (`"Emergency Fund"`); amounts accept arithmetic.
+Everything is a button or a form. Amount fields accept arithmetic
+(`15.71+1.35`) and show the result as you type.
 
 ### First month, from scratch
 
-```text
-profile add alex                  # create + select a profile (auto-creates the month + a Main pocket)
-income add Salary 2000            # add income (have as many entries as you like)
+1. **Create a profile** — the welcome screen asks for a name. This creates the
+   current month and a default **Main** pocket.
+2. **Add income** (Budget → *Add income*) — as many entries as you like.
+3. **Add sections** (*Add section*) — pick **Tax** (a % of fresh income, off the
+   very top), **Pre** (a fixed amount or a %, off the top) or **Post** (a % of
+   the remainder; post sections must add up to 100%). The headline shows
+   `Σ%` with ✓ when balanced.
+4. **Add fields** — from a section's `⋯` menu → *Add field*: a monthly budget
+   (an amount, or a % of the section's available after its fixed budgets) and an
+   optional max (rollover cap; ∞ by default).
+5. In your first month only, click a field and set its **Current** pot to what
+   it already holds.
+6. **Add transaction** (the primary button, or `+` on mobile) — pick a field
+   (recent ones are one tap away), an amount, the day (defaults to today) and a
+   description. The toast tells you what's left.
 
-section add tax  Income-Tax 1.5%  # tax-section: a % of fresh income, off the very top
-section add pre  Bills 500        # pre-section: a fixed amount off the top (or a %)
-section add post Needs 50%        # post-sections split the remainder; must sum to 100%
-section add post Wants 30%
-section add post Savings 20%
+### Finding your way
 
-field add Needs Groceries 300 400  # field with budget 300, max 400 (use `inf` for ∞)
-field add Savings Emergency 50%    # % budget: half of Savings' AVAILABLE after its fixed budgets
-field set  Groceries current 100   # type your carried-over pot (first month only)
+- **Budget** — the month headline (income, post pool, allocation), an
+  allocation bar, and the section accordion: click a section to expand its field
+  table inline (any number at once, or *Expand all*). Each row shows avail, rest
+  (⚠ when negative) and where its rest goes at close. Click a field row to edit
+  it; the `⋯` menus hold add/edit/transfer/delete.
+- **Transactions** — newest first, filterable by field or text; edit or delete
+  from each row's `⋯` menu. *Transfer* moves pot money between fields (refused
+  if it would break the target's max). Transfers are listed below.
+- **Pockets** — how much each place should hold right now, with a per-field
+  breakdown; the default pocket also holds live section rests.
+- **Settings** — add, switch, rename and delete profiles; choose System, Light
+  or Dark appearance.
+- **History** — every month with income, spent and leftovers. Open a past month
+  to view it read-only, then *Back to open month*.
+- **Help** — the concepts above, in the app.
 
-add Groceries 15.71+1.35 d5 weekly shop   # log a transaction (d5 = day 5; day defaults to today)
-```
-
-### Navigating
-
-The screen has two panes: working tabs on the left (Budget, Transactions,
-Pockets, Settings) and helper tabs on the right (**Docs**, **History**).
-
-On the Budget tab, click a section row — or `expand <section>` — to reveal its
-fields inline; any number of sections can be open at once. `expand` with no name
-opens them all, `collapse <section>` closes one, `collapse` closes them all ·
-`goto <tab>` switches tab (either pane) ·
-`Tab` cycles tabs · `Ctrl+B` toggles the helper pane · drag the divider between
-the panes, or `Ctrl+←`/`Ctrl+→`, to resize it (the keyboard shortcuts are shown
-along the bottom of the helper pane).
+On a phone, a bottom tab bar holds Budget, Transactions, Pockets and **More**
+(History, Settings, Help); forms open as bottom sheets.
 
 ### Closing a month
 
-```text
-close          # shows a summary, asks Type Yes or No, then locks the month and creates the next
-```
-
-Field pots carry forward as next month's `current`; section RESTs route per
-their setting; a single **Leftovers** income entry is created. Closed months are
-read-only in **History** (`month 2025-01` to view, `month` to return).
-
-<details>
-<summary><b>Full command reference</b></summary>
-
-| Command | Effect |
-|---|---|
-| `add <field> <amount> [d<day>] [desc…]` | Record a transaction |
-| `transfer <amount> <from> <to> [d<day>] [note…]` | Move pot money between fields |
-| `tx [filter]` · `tx edit <#> <attr> <val>` · `tx del <#>` | View / edit / delete transactions |
-| `section add tax\|pre\|post <name> <pct%\|amount>` | Create a section (`tax`/`post` are %-only) |
-| `section set <name> pct\|amount\|name\|rest <value>` | Edit a section (`rest` = `income`/`self`/`<section>`) |
-| `section order <name> <pos>` · `section del <name>` | Reorder / delete a section |
-| `field add <section> <name> [budget] [max\|inf]` | Create a field |
-| `field set <name> budget\|max\|pocket\|name\|current <value>` | Edit a field |
-| `field del <name>` | Delete a field (only when empty) |
-| `income add\|set\|del …` | Manage income entries |
-| `pocket add\|rename\|del <name>` · `pocket main <name>` | Manage pockets |
-| `month [<yyyy-mm>]` · `close` | View a month / close the open one |
-| `expand [section]` · `collapse [section]` · `goto <tab>` | Expand/collapse a section (or all) · navigation |
-| `profile add\|switch\|rename\|del <name>` | Manage profiles |
-| `help [command]` | Open the Docs tab — the full command reference (filter by command) |
-| `quit` | Exit |
-
-</details>
+*Close month* shows a summary — leftovers going to next month's income and any
+rests that carry — and asks you to confirm. It then locks the month and creates
+the next: field pots carry forward as next month's current, section rests route
+per their setting, and a single **Leftovers** income entry is created. Deleting a
+profile, section, field, income, pocket or transaction also asks first.
 
 ## 🏗️ Building a standalone binary
 
-PyInstaller produces a one-file binary; it bundles the host interpreter, so
-**build on the OS/arch you're targeting** (no cross-compiling).
+PyInstaller produces a one-file binary containing the engine and the built UI;
+it bundles the host interpreter, so **build on the OS/arch you're targeting**
+(no cross-compiling).
 
 ```bash
+(cd web && npm ci && npm run build)            # the UI must be built first
 uv sync --no-dev --group build
 uv run --group build pyinstaller monay.spec    # → dist/monay  (or dist/monay.exe)
 ```
@@ -201,10 +177,11 @@ publishes them as a stable versioned release on each **`v*`** tag (see
 monay/
   domain/      pure engine: value objects, Month aggregate + recompute, closing, ports
   data/        SQLAlchemy Core adapters, schema, migrations, unit of work
-  app/         use-case services + the spec-driven command registry
-  tui/         Textual app: shell, command bar, theme, screens, widgets
+  app/         use-case services + input interpreters (amounts, %, caps, routing)
+  web/         FastAPI JSON API + presenter; serves the built UI from web/static
   bootstrap.py composition root (dependency-injector container)
-tests/         unit + engine + adapter + headless-TUI tests
+web/           React + Vite + TypeScript frontend (npm run build → monay/web/static)
+tests/         unit + engine + adapter + API tests
 docs/          DEVELOPING (code guide)
 ```
 

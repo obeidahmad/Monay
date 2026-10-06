@@ -3,8 +3,7 @@
 Holds the session (current profile + the month being viewed) and depends only on
 the ports (``UnitOfWork`` factory + ``Clock``). Each use case opens a UoW, loads
 the active month, calls an aggregate mutator (which recomputes + enforces
-invariants), saves, and commits. The command layer (``app/commands``) and the
-TUI (``tui/``) both drive this object.
+invariants), saves, and commits. The web API (``web/``) drives this object.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from dataclasses import dataclass
 
 from monay.app.errors import BadUsageError, NoProfileError
 from monay.domain.closing import MonthCloser
-from monay.domain.entities import INCOME_SECTION_NAME, Income, Profile, Transaction
+from monay.domain.entities import Income, Profile, Transaction
 from monay.domain.errors import DuplicateNameError, NotFoundError
 from monay.domain.money import Money, Numeric
 from monay.domain.month import Month, MonthState
@@ -36,6 +35,16 @@ class MonthSummary:
     leftovers: Money
 
 
+@dataclass(frozen=True)
+class ClosePreview:
+    """The summary shown before a close: leftovers to income + carried RESTs."""
+
+    key: MonthKey
+    next_key: MonthKey
+    leftovers: Money
+    carries: tuple[tuple[str, Money], ...]
+
+
 class MonayApp:
     def __init__(self, uow_factory: Callable[[], UnitOfWork], clock: Clock) -> None:
         self._uow_factory = uow_factory
@@ -45,14 +54,6 @@ class MonayApp:
         self.profile_name: str | None = None
         self.viewing: MonthKey | None = None
         self.viewing_closed: bool = False
-        # ephemeral UI state (the TUI reads these)
-        self.tab: str = "budget"  # active working tab (left pane)
-        self.helper_tab: str = "docs"  # active helper tab (right pane)
-        self.helpers_visible: bool = True  # is the right (helper) pane shown?
-        self.docs_query: str | None = None  # filter for the Docs tab, if any
-        self.expanded_sections: set[str] = set()
-        self.tx_filter: str | None = None
-        self.should_quit: bool = False
 
     # =====================================================================
     # Profiles
@@ -143,6 +144,11 @@ class MonayApp:
         with self._uow_factory() as uow:
             return self._load_active(uow)
 
+    def is_first_month(self) -> bool:
+        """Is the month being viewed this profile's first? (CURRENT is editable.)"""
+        with self._uow_factory() as uow:
+            return self._is_first_month(uow, self._load_active(uow))
+
     def view_month(self, key_text: str) -> tuple[MonthKey, bool]:
         key = MonthKey.from_string(key_text)
         with self._uow_factory() as uow:
@@ -185,12 +191,17 @@ class MonayApp:
     # Transactions / transfers
     # =====================================================================
     def add_transaction(
-        self, field_name: str, amount: Money, day: int | None, description: str = ""
+        self,
+        field_name: str,
+        amount: Money,
+        day: int | None,
+        description: str = "",
+        *,
+        section: str | None = None,
     ) -> Month:
         def fn(m: Month) -> None:
-            section, _ = m.locate_field(field_name)
             m.add_transaction(
-                section,
+                self._sec(m, field_name, section),
                 field_name,
                 self._resolve_day(m, day),
                 amount,
@@ -206,14 +217,15 @@ class MonayApp:
         to_field: str,
         day: int | None,
         note: str = "",
+        *,
+        from_section: str | None = None,
+        to_section: str | None = None,
     ) -> Month:
         def fn(m: Month) -> None:
-            fs, _ = m.locate_field(from_field)
-            ts, _ = m.locate_field(to_field)
             m.transfer(
-                fs,
+                self._sec(m, from_field, from_section),
                 from_field,
-                ts,
+                self._sec(m, to_field, to_section),
                 to_field,
                 self._resolve_day(m, day),
                 amount,
@@ -249,38 +261,84 @@ class MonayApp:
             lambda m: m.add_field(section, name, budget, cap, self._default_pocket(m))
         )
 
-    def set_field_budget(self, name: str, budget: Money | Percentage) -> Month:
+    def set_field_budget(
+        self, name: str, budget: Money | Percentage, *, section: str | None = None
+    ) -> Month:
         return self._mutate(
-            lambda m: m.set_field_budget(self._sec(m, name), name, budget)
+            lambda m: m.set_field_budget(self._sec(m, name, section), name, budget)
         )
 
-    def set_field_cap(self, name: str, cap: Cap) -> Month:
-        return self._mutate(lambda m: m.set_field_cap(self._sec(m, name), name, cap))
-
-    def set_field_pocket(self, name: str, pocket: str) -> Month:
+    def set_field_cap(
+        self, name: str, cap: Cap, *, section: str | None = None
+    ) -> Month:
         return self._mutate(
-            lambda m: m.set_field_pocket(self._sec(m, name), name, pocket)
+            lambda m: m.set_field_cap(self._sec(m, name, section), name, cap)
         )
 
-    def rename_field(self, name: str, new_name: str) -> Month:
+    def set_field_pocket(
+        self, name: str, pocket: str, *, section: str | None = None
+    ) -> Month:
         return self._mutate(
-            lambda m: m.rename_field(self._sec(m, name), name, new_name)
+            lambda m: m.set_field_pocket(self._sec(m, name, section), name, pocket)
         )
 
-    def delete_field(self, name: str) -> Month:
-        return self._mutate(lambda m: m.delete_field(self._sec(m, name), name))
+    def rename_field(
+        self, name: str, new_name: str, *, section: str | None = None
+    ) -> Month:
+        return self._mutate(
+            lambda m: m.rename_field(self._sec(m, name, section), name, new_name)
+        )
 
-    def set_field_current(self, name: str, current: Money) -> Month:
-        pid = self._require_profile()
+    def delete_field(self, name: str, *, section: str | None = None) -> Month:
+        return self._mutate(lambda m: m.delete_field(self._sec(m, name, section), name))
+
+    def set_field_current(
+        self, name: str, current: Money, *, section: str | None = None
+    ) -> Month:
+        self._require_profile()
         with self._uow_factory() as uow:
             m = self._load_active(uow)
-            if m.key != min(uow.months.keys(pid)):
+            if not self._is_first_month(uow, m):
                 raise BadUsageError(
                     "CURRENT can only be set in the first month; "
                     "afterwards it carries automatically"
                 )
-            section, _ = m.locate_field(name)
-            m.set_field_current(section, name, current)
+            m.set_field_current(self._sec(m, name, section), name, current)
+            uow.months.save(m)
+            uow.commit()
+            return m
+
+    def edit_field(
+        self,
+        section: str,
+        name: str,
+        *,
+        budget: Money | Percentage | None = None,
+        cap: Cap | None = None,
+        pocket: str | None = None,
+        current: Money | None = None,
+        new_name: str | None = None,
+    ) -> Month:
+        """Apply several field edits as one change (all or nothing)."""
+        self._require_profile()
+        with self._uow_factory() as uow:
+            m = self._load_active(uow)
+            m.field(section, name)  # raises NotFoundError before any change
+            if current is not None:
+                if not self._is_first_month(uow, m):
+                    raise BadUsageError(
+                        "CURRENT can only be set in the first month; "
+                        "afterwards it carries automatically"
+                    )
+                m.set_field_current(section, name, current)
+            if budget is not None:
+                m.set_field_budget(section, name, budget)
+            if cap is not None:
+                m.set_field_cap(section, name, cap)
+            if pocket is not None:
+                m.set_field_pocket(section, name, pocket)
+            if new_name is not None and new_name != name:
+                m.rename_field(section, name, new_name)
             uow.months.save(m)
             uow.commit()
             return m
@@ -317,6 +375,31 @@ class MonayApp:
     def order_section(self, name: str, position: int) -> Month:
         return self._mutate(lambda m: m.edit_section(name, position=position))
 
+    def edit_section(
+        self,
+        name: str,
+        *,
+        allocation: Money | Percentage | None = None,
+        routing: RestRouting | None = None,
+        position: int | None = None,
+        new_name: str | None = None,
+    ) -> Month:
+        """Apply several section edits as one change (all or nothing)."""
+
+        def fn(m: Month) -> None:
+            if isinstance(allocation, Percentage):
+                m.edit_section(name, percentage=allocation)
+            elif allocation is not None:
+                m.edit_section(name, amount=allocation)
+            if routing is not None:
+                m.edit_section(name, rest_routing=routing)
+            if position is not None:
+                m.edit_section(name, position=position)
+            if new_name is not None and new_name != name:
+                m.edit_section(name, new_name=new_name)
+
+        return self._mutate(fn)
+
     def delete_section(self, name: str) -> Month:
         return self._mutate(lambda m: m.delete_section(name))
 
@@ -343,6 +426,20 @@ class MonayApp:
     def rename_pocket(self, old: str, new: str) -> Month:
         return self._mutate(lambda m: m.rename_pocket(old, new))
 
+    def edit_pocket(
+        self, name: str, *, new_name: str | None = None, main: bool = False
+    ) -> Month:
+        """Rename a pocket and/or make it the default, as one change."""
+
+        def fn(m: Month) -> None:
+            m.pocket(name)  # raises NotFoundError before any change
+            if main:
+                m.set_default_pocket(name)
+            if new_name is not None and new_name != name:
+                m.rename_pocket(name, new_name)
+
+        return self._mutate(fn)
+
     def delete_pocket(self, name: str) -> Month:
         return self._mutate(lambda m: m.delete_pocket(name))
 
@@ -352,22 +449,19 @@ class MonayApp:
     # =====================================================================
     # Closing
     # =====================================================================
-    def close_summary(self) -> str:
+    def close_preview(self) -> ClosePreview:
+        """What closing the active month would do (refused if it can't close)."""
         m = self.active_month()
         m.assert_operable()
         leftovers = sum(
             (s.rest for s in m.sections if s.rest_routing.is_income), Money.zero()
         )
-        carries = [
-            f"{s.name} REST {s.rest.display()} carries"
+        carries = tuple(
+            (s.name, s.rest)
             for s in m.sections
             if not s.rest_routing.is_income and not s.rest.is_zero
-        ]
-        tail = ("; " + "; ".join(carries)) if carries else ""
-        return (
-            f"⚠ Close {month_label(m.key)} forever? Leftovers {leftovers.display()} "
-            f"→ {month_label(m.key.next())}{tail}."
         )
+        return ClosePreview(m.key, m.key.next(), leftovers, carries)
 
     def close_active(self) -> Month:
         self._require_profile()
@@ -379,73 +473,6 @@ class MonayApp:
             uow.commit()
         self.viewing, self.viewing_closed = nxt.key, False
         return nxt
-
-    # =====================================================================
-    # Navigation (UI state)
-    # =====================================================================
-    def goto(self, tab: str) -> None:
-        # Route by which pane owns the tab: helper tabs live in the right pane.
-        if tab in ("docs", "history"):
-            self.helper_tab = tab
-            self.helpers_visible = True
-            if tab == "docs":
-                self.docs_query = None  # navigating to Docs shows the full reference
-        else:
-            self.tab = tab
-
-    def show_docs(self, query: str | None = None) -> None:
-        self.helper_tab = "docs"
-        self.helpers_visible = True
-        self.docs_query = query
-
-    def set_tx_filter(self, text: str | None) -> None:
-        self.tx_filter = text or None
-        self.tab = "transactions"
-
-    def _canonical_section(self, name: str) -> str:
-        # 'income' addresses the synthetic income pseudo-section, which is not a
-        # real Section — store the canonical name regardless of the typed case.
-        return INCOME_SECTION_NAME if name.lower() == INCOME_SECTION_NAME else name
-
-    def expand_section(self, name: str) -> None:
-        # Income is rendered directly (no existence check); a real section must
-        # exist before it can be expanded so a typo is reported, not silently kept.
-        if name.lower() != INCOME_SECTION_NAME:
-            with self._uow_factory() as uow:
-                self._load_active(uow).section(name)  # raises NotFoundError if gone
-        self.expanded_sections.add(self._canonical_section(name))
-
-    def collapse_section(self, name: str) -> None:
-        canonical = self._canonical_section(name)
-        # Validate only when collapsing would do nothing anyway: a redundant
-        # collapse stays a cheap no-op, but a name that was never a real section
-        # (a typo) is reported rather than silently "collapsed".
-        if canonical not in self.expanded_sections and canonical != INCOME_SECTION_NAME:
-            with self._uow_factory() as uow:
-                self._load_active(uow).section(name)  # raises NotFoundError if gone
-        self.expanded_sections.discard(canonical)
-
-    def expand_all(self) -> None:
-        with self._uow_factory() as uow:
-            month = self._load_active(uow)
-            names = {s.name for s in month.sections}
-            if month.incomes:
-                names.add(INCOME_SECTION_NAME)
-        self.expanded_sections = names
-
-    def collapse_all(self) -> None:
-        self.expanded_sections.clear()
-
-    def toggle_section(self, name: str) -> None:
-        # Driven by clicking a rendered row, so the name is trusted (no check).
-        name = self._canonical_section(name)
-        if name in self.expanded_sections:
-            self.expanded_sections.discard(name)
-        else:
-            self.expanded_sections.add(name)
-
-    def quit(self) -> None:
-        self.should_quit = True
 
     # =====================================================================
     # Internals
@@ -478,9 +505,7 @@ class MonayApp:
         today = self._clock.today()
         if month.key == MonthKey.from_date(today):
             return today.day
-        raise BadUsageError(
-            "this isn't the current calendar month — give a day like d5"
-        )
+        raise BadUsageError("this isn't the current calendar month — pick a day")
 
     def _require_profile(self) -> int:
         if self.profile_id is None:
@@ -488,9 +513,16 @@ class MonayApp:
         return self.profile_id
 
     @staticmethod
-    def _sec(month: Month, field_name: str) -> str:
+    def _sec(month: Month, field_name: str, section: str | None = None) -> str:
+        """The field's section: the one given (validated), else located by name."""
+        if section is not None:
+            month.field(section, field_name)  # raises NotFoundError if absent
+            return section
         section_name, _ = month.locate_field(field_name)
         return section_name
+
+    def _is_first_month(self, uow: UnitOfWork, month: Month) -> bool:
+        return month.key == min(uow.months.keys(self._require_profile()))
 
     @staticmethod
     def _default_pocket(month: Month) -> str:

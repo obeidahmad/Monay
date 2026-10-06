@@ -1,1 +1,0 @@
-"""Tab screens: budget, transactions, pockets, history, settings."""

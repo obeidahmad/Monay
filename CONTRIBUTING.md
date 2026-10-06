@@ -21,7 +21,8 @@ dependencies, and running tools. There is no global `pip`; every command is
 git clone https://github.com/obeidahmad/Monay
 cd Monay
 uv sync --group dev     # venv + deps (fetches Python 3.14) + dev tools
-uv run python -m monay  # launch the app
+(cd web && npm install && npm run build)  # build the React UI (Node 20+)
+uv run python -m monay  # launch the app (opens your browser)
 uv run pytest           # run the suite
 ```
 
@@ -37,7 +38,7 @@ To open and address issues/PRs from the terminal you'll also want the
 2. Branch      Cut a branch off main, named for the issue
 3. Build       Implement; commit with conventional-commit messages
 4. PR          Open it: "Closes #<n>", conventional-commit title
-   ├─ CI fires:        ruff + format + mypy + pytest   ← HARD gate, blocks merge
+   ├─ CI fires:        ruff + format + mypy + pytest + web build  ← HARD gate
    └─ Claude reviews:  posts a summary + inline comments, incl. a docs check
 5. Address     Fold in review comments, fix anything CI is unhappy about, push
    └─ repeat 4–5 until CI is green and the review is satisfied
@@ -96,6 +97,7 @@ uv run ruff check        # lint
 uv run ruff format       # auto-formats in place; CI verifies with --check
 uv run mypy              # type-check monay/ (strict)
 uv run pytest            # the suite
+(cd web && npm run build) # if you touched web/: type-check + build the UI
 ```
 
 Add or update tests for the change — see the testing table in the
@@ -120,7 +122,7 @@ conventional-commit prefix (`feat:`/`fix:`/`refactor:`/`perf:`/`ci:`/`docs:`).
 Two things run automatically on the PR:
 
 - **CI (`ci` workflow) is the hard gate.** It runs ruff lint, ruff
-  format-check, mypy (strict), and pytest. Red here blocks merge — treat any
+  format-check, mypy (strict), pytest, and the web UI's type-check + build. Red here blocks merge — treat any
   failure as must-fix. Open a failing job's log to see the actual error.
 - **The Claude review is advisory.** It posts a summary comment plus inline
   comments on anything worth a look, and flags whether the change needs docs
@@ -171,7 +173,7 @@ Claude to take a look.
 - **uv only** — never global `pip`. `uv add` / `uv run` / `uv sync`.
 - **Fix lint findings, don't suppress them** — prefer a rename or refactor over
   an ignore rule.
-- **Keep `domain/` pure** — no SQLAlchemy, no Textual, no I/O; dependencies point
+- **Keep `domain/` pure** — no SQLAlchemy, no web framework, no I/O; dependencies point
   inward (see the architecture section of the
   [Developer Guide](docs/DEVELOPING.md#1-architecture-at-a-glance)).
 - **A bot never gates merge.** CI is mechanical; the review is advice; a human
