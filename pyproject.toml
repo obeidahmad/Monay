@@ -11,6 +11,8 @@ dependencies = [
     "textual>=8.2.7",
     "sqlalchemy>=2.0",
     "dependency-injector>=4.49",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
 ]
 
 [dependency-groups]

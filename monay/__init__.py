@@ -1,6 +1,6 @@
-"""Monay — a modern terminal budget app with monthly rollover logic.
+"""Monay — a budget app with monthly rollover logic, for the terminal and the web.
 
-Layering (see docs/DEVELOPING.md): ``tui`` -> ``app`` -> ``domain``;
+Layering (see docs/DEVELOPING.md): ``tui`` and ``api`` -> ``app`` -> ``domain``;
 ``data`` <-> ``app``. ``domain`` is pure (no DB, no UI). ``data`` and
 ``domain`` never import each other.
 """
