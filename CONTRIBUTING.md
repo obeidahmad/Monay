@@ -21,9 +21,20 @@ dependencies, and running tools. There is no global `pip`; every command is
 git clone https://github.com/obeidahmad/Monay
 cd Monay
 uv sync --group dev     # venv + deps (fetches Python 3.14) + dev tools
-uv run python -m monay  # launch the app
+uv run python -m monay  # launch the terminal app
 uv run pytest           # run the suite
 ```
+
+The web app (`web/`) has its own toolchain — [Node.js](https://nodejs.org/) 24+
+and npm. It talks to the engine through the HTTP API, so run the two side by
+side:
+
+```bash
+uv run python -m monay.api              # the API, on http://127.0.0.1:8000
+cd web && npm install && npm run dev    # the UI, on http://localhost:5173
+```
+
+Or run both as they ship, in containers: `docker compose up --build`.
 
 To open and address issues/PRs from the terminal you'll also want the
 [GitHub CLI](https://cli.github.com/) authenticated once with `gh auth login`.
@@ -99,8 +110,19 @@ uv run pytest            # the suite
 ```
 
 Add or update tests for the change — see the testing table in the
-[Developer Guide](docs/DEVELOPING.md#8-testing). The keystone is
+[Developer Guide](docs/DEVELOPING.md#10-testing). The keystone is
 `tests/test_recompute.py`, which hand-verifies the budget math.
+
+If you touched `web/`, run its checks too. CI does not run these yet, so they
+are on you:
+
+```bash
+cd web
+npm run typecheck        # tsc, strict
+npm run lint             # eslint
+npm run format           # prettier, in place
+npm run build            # the production bundle still builds
+```
 
 Commit with [conventional-commit](https://www.conventionalcommits.org/) messages
 matching the issue type (`feat: …`, `fix: …`).
@@ -171,8 +193,13 @@ Claude to take a look.
 - **uv only** — never global `pip`. `uv add` / `uv run` / `uv sync`.
 - **Fix lint findings, don't suppress them** — prefer a rename or refactor over
   an ignore rule.
-- **Keep `domain/` pure** — no SQLAlchemy, no Textual, no I/O; dependencies point
-  inward (see the architecture section of the
+- **Keep `domain/` pure** — no SQLAlchemy, no Textual, no FastAPI, no I/O;
+  dependencies point inward (see the architecture section of the
   [Developer Guide](docs/DEVELOPING.md#1-architecture-at-a-glance)).
+- **Rules live in the engine, once.** The terminal app and the web app are two
+  front ends over the same use cases; neither re-implements budget logic.
+- **In `web/`, the design system is the spec** — components use design tokens
+  (CSS variables) only, and generated files (`*.gen.*`) are never edited or
+  committed.
 - **A bot never gates merge.** CI is mechanical; the review is advice; a human
   approves and merges.

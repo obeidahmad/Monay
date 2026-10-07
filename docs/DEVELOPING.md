@@ -11,8 +11,11 @@ modifying Monay. (User-facing concepts and commands live in the
 Strict one-directional layering — nothing lower imports anything higher:
 
 ```
-┌─ tui/     Textual: tab strip, command bar, screens, rendering
-│      │ calls down
+   web/     React app (browser) ── HTTP/JSON ──┐
+                                               ▼
+┌─ tui/     Textual: tab strip, command      api/   FastAPI: routes, wire
+│           bar, screens, rendering                 format, error mapping
+│      │ both call down                              │
 ├─ app/    application services (use cases) + the command registry
 │      │ depends on PORTS only
 ├─ domain/ PURE Python: value objects, entities, the Month aggregate, the
@@ -22,11 +25,17 @@ Strict one-directional layering — nothing lower imports anything higher:
            implement the domain ports; schema; migrations
 ```
 
-- **`domain/` is pure** — no SQLAlchemy, no Textual, no I/O. It *defines* the
-  ports (typing `Protocol`s); it never imports `data/`.
+- **`domain/` is pure** — no SQLAlchemy, no Textual, no FastAPI, no I/O. It
+  *defines* the ports (typing `Protocol`s); it never imports `data/`.
 - **`data/` implements those ports.** `data/` imports `domain/`, never the
   reverse. Dependencies point inward.
 - **`app/` orchestrates through the ports**, never against a concrete DB type.
+- **`tui/` and `api/` are two front doors to the same `app/` layer.** Neither
+  imports the other, and no budgeting rule lives in either: a rule added to the
+  domain shows up in the terminal and in the browser at once.
+- **`web/` is a separate program** (TypeScript, in the browser). It knows the
+  engine only through the HTTP API — and its types for that API are generated
+  from it (§9).
 - **`bootstrap.py`** is the single composition root — the only place that names
   every concrete type and wires them via a DI container.
 
@@ -56,7 +65,8 @@ monay/
     migrations/      versioned migration modules (0001_initial, …)
 
   app/
-    services.py      MonayApp — the session-bearing use-case facade
+    services.py      MonayApp — the session-bearing use-case facade (the TUI's)
+    budgeting.py     BudgetingService — the stateless use cases (the API's)
     clock.py         SystemClock adapter
     errors.py        application/command errors
     commands/        registry.py · parser.py · specs.py · handlers.py
@@ -68,6 +78,34 @@ monay/
     format.py        money formatting helpers
     screens/         budget · transactions · pockets · settings · docs · history
     widgets/         accordion · divider
+
+  api/
+    __main__.py      entry point: serve with uvicorn (python -m monay.api)
+    app.py           create_app() — the FastAPI factory; wiring in the lifespan
+    settings.py      configuration from the environment (MONAY_DB_URL, …)
+    schemas.py       the wire format (Pydantic) — source of the web app's types
+    parsing.py       request values → domain values, errors pinned to a field
+    presenters.py    domain objects → response models
+    errors.py        engine errors → HTTP status + one error shape
+    deps.py          request-scoped dependencies (service, month key, If-Match)
+    openapi.py       write the OpenAPI document (python -m monay.api.openapi)
+    routes/          meta · profiles · months · incomes · sections ·
+                     transactions · pockets
+
+web/                 the web app (its own toolchain: Node, Vite, TypeScript)
+  design/tokens.json the Monay design tokens, vendored from the design system
+  scripts/           build-tokens.mjs — tokens.json → CSS custom properties
+  src/
+    api/             client.ts (typed fetch) · queries.ts (server state)
+    app/             shell, providers, routing glue, the Sheet host
+    components/      the design system's components, one per file
+    features/        the screens and their forms, by tab
+    lib/             money · expression · dates · budget helpers
+    styles/          global.css (the ground, glass, type helpers)
+
+Dockerfile           two images: the engine's API, and the web UI on nginx
+compose.yaml         runs both (docker compose up)
+docker/nginx.conf    the web container: static app + /api reverse proxy
 ```
 
 ---
@@ -199,15 +237,26 @@ from `recompute()`). Migrations are forward-only modules under
 ## 5. Composition root (`bootstrap.py`)
 
 A `dependency-injector` container: `Singleton` engine (migrated on build) and
-`Clock`; `Factory` `UnitOfWork`; `Singleton` `MonayApp` (the session) and the
-command registry. Tests swap any provider with a one-line `.override(...)` — the
-in-memory `FakeUnitOfWork` makes service tests DB-free.
+`Clock`; `Factory` `UnitOfWork`; `Singleton` `MonayApp` (the TUI's session) and
+the command registry; `Singleton` `BudgetingService` (the API's use cases).
+Tests swap any provider with a one-line `.override(...)` — the in-memory
+`FakeUnitOfWork` makes service tests DB-free.
 
 ## 6. Application layer
 
-`MonayApp` (`app/services.py`) is the use-case facade. It holds the session
-(current profile + the month being viewed) and depends only on the ports. Each
-use case: load the active month → call an aggregate mutator → save → commit.
+There are two application services, because the two front ends hold their
+context differently:
+
+- **`MonayApp`** (`app/services.py`) is the TUI's facade. A terminal app is one
+  long-lived process with one person looking at one month, so it keeps a
+  **session** — current profile + viewed month — in memory.
+- **`BudgetingService`** (`app/budgeting.py`) is the API's. HTTP has no session
+  to lean on (two browser tabs are two independent callers), so it is
+  **stateless**: every use case names the profile and month it acts on (§8).
+
+Both depend only on the ports, and both do the same thing per use case: load the
+month → call an aggregate mutator → save → commit. The rules stay in the
+`Month` aggregate, which is what keeps the two from drifting.
 
 The **command layer** (`app/commands/`) is spec-driven: every command is one
 `CommandSpec` (`specs.py`) — path, argument schema, help, handler. The same
@@ -242,9 +291,112 @@ name); the app's `on_click` reads that meta to toggle the row, and
 `expand`/`collapse` do the same from the command bar. The set of open rows lives
 in `MonayApp.expanded_sections`.
 
+## 8. HTTP API (`api/`)
+
+A FastAPI application over `BudgetingService`. `create_app()` only *declares*
+the API; the container is built in the lifespan hook, when a server actually
+starts — so importing the module, or dumping its OpenAPI document, opens no
+database. Everything is served under `/api` (interactive reference at
+`/api/docs`), so a single reverse-proxy rule covers it.
+
+Every handler does the same three things: read the request into domain values
+(`parsing.py`), call one use case, present the result (`presenters.py`).
+
+### Addressing and concurrency
+
+A month's children have no stable database identity (`mappers.py` rewrites them
+on each save), and names don't belong in URLs. So sections, fields, pockets and
+income entries are addressed by their **position** in the month, transactions
+and transfers by their **`#`**:
+
+```
+PATCH /api/profiles/1/months/2025-01/sections/1/fields/0
+```
+
+A position only means something for the version of the month the caller was
+looking at. Each month therefore carries a **`revision`** — a content hash of
+everything it stores (`month_revision`) — and every change must send the
+revision it was based on in `If-Match`. If the month has changed since, the
+service refuses with `StaleRevisionError` → **412**, rather than apply an edit
+to whatever now sits at that position. This is ordinary optimistic concurrency,
+and it is what makes two open tabs (or a phone and a laptop) safe.
+
+A change responds with **the month it produced** (`ChangeOut.month`), so a
+client never recomputes anything: what it shows is what the engine computed.
+
+### Undo
+
+Deletions happen immediately and return an `undo_token`.
+`POST …/months/{key}/undo` puts the month back *exactly* as it was:
+`UndoJournal` keeps the pre-change aggregate in memory for two minutes, and
+restores it only if nothing else has happened to the month since. Being in
+memory is deliberate (an undo that outlives the minute is not an undo), and it
+is one reason the API runs as a **single process** — SQLite's single writer is
+the other.
+
+### Wire format
+
+- **Money is a string** at the stored 4dp (`"332.9400"`), never a JSON number:
+  a client would parse that as a float. The client does the 2dp display.
+- **Typed amounts are expressions** (`"15.71+1.35"`); the server evaluates them
+  with the engine's own evaluator.
+- **Errors have one shape**, `{code, message, field}` (`errors.py`). `message`
+  is written for a person; `field` names the input at fault when the server
+  can tell, so a form can put the message under it.
+
+| Status | When |
+|---|---|
+| 404 | the profile / month / position doesn't exist |
+| 409 | a rule about the *state* refused it: duplicate name, closed month, field not empty, month not balanced, undo no longer possible |
+| 412 | the `If-Match` revision is stale |
+| 422 | a value is wrong: unreadable amount, percentage out of range, transfer above a MAX |
+
+**Adding an endpoint:** add the use case to `BudgetingService`, its request
+model to `schemas.py`, a handler in `routes/`, and run `npm run gen` in `web/`
+— the new operation is then typed on the client.
+
+## 9. Web app (`web/`)
+
+React + TypeScript on Vite. Server state is TanStack Query; routing is React
+Router (one URL per tab, `?month=yyyy-mm` to look at another month); the HTTP
+client is `openapi-fetch`. Its own guide is [`web/README.md`](../web/README.md);
+the essentials:
+
+**Two files are generated and never committed** (`npm run gen`, which `dev` and
+`build` run for you):
+
+| Generated | From | Why |
+|---|---|---|
+| `src/api/schema.gen.ts` | the API's OpenAPI document (`python -m monay.api.openapi`) | the client's types *are* the server's schema — a renamed property is a compile error, not a runtime surprise |
+| `src/styles/tokens.gen.css` | `design/tokens.json` | components reference CSS variables only; re-syncing the design system is "replace `tokens.json`" |
+
+**The design system is the spec.** `web/design/tokens.json` is vendored from
+the Monay design system, and `src/components/` holds its components under the
+names it gives them (`Widget`, `SectionRow`, `FieldTable`, `Sheet`, `Toast`, …),
+each with a CSS module beside it. No component hard-codes a colour, a radius or
+a font: if a value isn't a token, it doesn't belong in the stylesheet.
+
+**Data flow.** `api/queries.ts` is the only place that talks to the server.
+Reads are queries; a change is a typed action that sends the cached month's
+`revision`, and puts the month the server returns straight into the cache.
+Changes to a profile's months run one at a time, each reading the revision when
+it runs, so a quick second edit builds on the first one's result.
+
+**Money on the client is never a float.** `lib/money.ts` works on `bigint`
+ten-thousandths and rounds half-to-even for display, mirroring
+`Money.display()`; `lib/expression.ts` evaluates amount expressions as exact
+fractions for the live "= 17.06" preview. The server remains the authority.
+
+**Forms and feedback.** Every form is a `Sheet` (a native modal `<dialog>`),
+opened through one host (`app/SheetHost.tsx`). A refusal from the API goes
+under the input it names (`useSubmit`), never into a toast. One-step actions
+(`useAct`) answer with a toast, and deletions offer **Undo** there instead of
+asking first. Only closing a month and deleting a profile use a
+`ConfirmDialog`.
+
 ---
 
-## 8. Testing
+## 10. Testing
 
 ```
 uv run pytest                         # everything
@@ -265,12 +417,58 @@ uv run pytest tests/test_recompute.py # the engine's keystone test
 designed so every value is hand-verifiable against §3's formulas while
 exercising the interesting behaviors.
 
-## 9. Running & building
+**Not covered yet:** the HTTP API (`api/`, `app/budgeting.py`) and the web app
+have no automated tests, and CI does not build `web/`. The first web milestone
+was verified by driving the real stack end to end — the sample budget through
+the API against the engine's hand-verified numbers, and the UI in a browser.
+Turning that into `TestClient` tests for the API and a `web/` job in CI is the
+next step.
+
+## 11. Running & building
 
 ```
-uv sync                  # dev environment (fetches Python 3.14)
-uv run python -m monay   # run the app
+uv sync                      # dev environment (fetches Python 3.14)
+uv run python -m monay       # the terminal app
+uv run python -m monay.api   # the HTTP API, on http://127.0.0.1:8000
 ```
 
-Standalone binaries are produced by PyInstaller (`monay.spec`) and CI
+The API reads three environment variables (`api/settings.py`):
+`MONAY_DB_URL` (default `sqlite:///monay.db`, the file the TUI uses),
+`MONAY_API_HOST` (default `127.0.0.1` — the API has no authentication, so it
+isn't offered to the network unless asked) and `MONAY_API_PORT` (default
+`8000`). For a reloading server while working on it:
+
+```
+uv run uvicorn monay.api.app:create_app --factory --reload
+```
+
+The web app runs beside it, forwarding `/api` to the API:
+
+```
+cd web
+npm install
+npm run dev                  # http://localhost:5173 (regenerates types + tokens first)
+npm run typecheck && npm run lint
+```
+
+### Docker
+
+```
+docker compose up --build    # http://localhost:8080
+```
+
+One `Dockerfile`, two targets. `api` is the virtualenv on a slim Python image,
+run as an unprivileged user, with the database in a volume at `/data`. `web` is
+the built app on nginx, which also forwards `/api` to the engine — the browser
+only ever talks to one origin, so there is no CORS to configure and no API
+address baked into the bundle. They share a build stage because the web build
+needs the Python package to produce the OpenAPI document its types come from.
+
+The version in an image comes from the `MONAY_VERSION` build argument (there is
+no `.git` in a build context for hatch-vcs to read):
+`MONAY_VERSION=1.2.0 docker compose build`.
+
+### Standalone binaries
+
+The terminal app is also packaged by PyInstaller (`monay.spec`) and CI
 (`.github/workflows/build.yml`); see the README's build section.
