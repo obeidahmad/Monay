@@ -36,6 +36,15 @@ class MonthSummary:
     leftovers: Money
 
 
+def summarize_month(month: Month) -> MonthSummary:
+    """The History row for one month: income in, money spent, REST → income."""
+    spent = sum((f.paid for s in month.sections for f in s.fields), Money.zero())
+    leftovers = sum(
+        (s.rest for s in month.sections if s.rest_routing.is_income), Money.zero()
+    )
+    return MonthSummary(month.key, month.state, month.total_income, spent, leftovers)
+
+
 class MonayApp:
     def __init__(self, uow_factory: Callable[[], UnitOfWork], clock: Clock) -> None:
         self._uow_factory = uow_factory
@@ -171,14 +180,7 @@ class MonayApp:
             for key in sorted(uow.months.keys(pid), reverse=True):
                 m = uow.months.get(pid, key)
                 assert m is not None  # key came from this profile's month list
-                spent = sum(
-                    (f.paid for s in m.sections for f in s.fields), Money.zero()
-                )
-                leftovers = sum(
-                    (s.rest for s in m.sections if s.rest_routing.is_income),
-                    Money.zero(),
-                )
-                out.append(MonthSummary(key, m.state, m.total_income, spent, leftovers))
+                out.append(summarize_month(m))
         return out
 
     # =====================================================================

@@ -17,3 +17,11 @@ class BadUsageError(AppError):
 
 class NoProfileError(AppError):
     """An operation needs a selected profile but none is active."""
+
+
+class StaleRevisionError(AppError):
+    """A change was based on a version of the month that is no longer current."""
+
+
+class UndoUnavailableError(AppError):
+    """An undo token is unknown, expired, or the month has moved on since."""

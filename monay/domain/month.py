@@ -282,14 +282,29 @@ class Month:
         day: Day | int | str | None = None,
         amount: Money | Numeric | None = None,
         description: str | None = None,
+        amount_expr: str | None = None,
+        field: tuple[str, str] | None = None,
     ) -> None:
+        """Correct a transaction. ``field`` is ``(section, field)`` — moving a
+        transaction to the field it should have been recorded on."""
         self._require_open()
-        if amount is not None:
-            tx.amount = self._positive(amount, "transaction amount")
-        if day is not None:
-            tx.day = self._day(day)
+        # Resolve everything that can fail before touching the transaction, so a
+        # rejected edit leaves it exactly as it was.
+        new_amount = (
+            None if amount is None else self._positive(amount, "transaction amount")
+        )
+        new_day = None if day is None else self._day(day)
+        new_field = None if field is None else self.field(*field)
+        if new_amount is not None:
+            tx.amount = new_amount
+        if amount_expr is not None:
+            tx.amount_expr = amount_expr
+        if new_day is not None:
+            tx.day = new_day
         if description is not None:
             tx.description = description
+        if new_field is not None:
+            tx.field = new_field
         self.recompute()
 
     def delete_transaction(self, tx: Transaction) -> None:
@@ -499,6 +514,13 @@ class Month:
             if any(o.name == new_name for o in self.sections):
                 raise DuplicateNameError(f"a section named {new_name!r} already exists")
             s.name = new_name
+            # REST routing addresses its target by *name*: follow the rename so
+            # sections routing here keep doing so, instead of silently falling
+            # back to income at close because the old name is gone.
+            for other in self.sections:
+                routing = other.rest_routing
+                if routing.is_section and routing.target == name:
+                    other.rest_routing = RestRouting.to_section(new_name)
         if percentage is not None:
             s.percentage = self._as_percentage(percentage)
             s.alloc_kind = AllocKind.PCT
