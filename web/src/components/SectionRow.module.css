@@ -1,0 +1,180 @@
+/* Columns shared by the header and every row: name | avail | rest | routing. */
+.list {
+  --columns: 4px minmax(0, 1fr) 104px 104px 148px;
+  padding: var(--space-2) var(--space-5) var(--space-3);
+  border-radius: var(--radius-lg);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: var(--columns);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3) 44px var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.head > :first-child {
+  grid-column: 1 / span 2;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: var(--columns);
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding: var(--space-3) 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: var(--type-amount);
+  text-align: left;
+}
+
+.bar {
+  align-self: stretch;
+  width: 4px;
+  min-height: 36px;
+  border-radius: var(--radius-pill);
+}
+
+.name {
+  display: grid;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  font: var(--type-title-widget);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker {
+  display: inline-block;
+  width: 1.4em;
+  font-size: 0.8em;
+}
+
+.share {
+  padding-left: calc(1.4em * 0.8);
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.avail,
+.rest {
+  color: var(--text-strong);
+}
+
+.routing {
+  overflow: hidden;
+  font: var(--type-caption);
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.menu {
+  display: grid;
+  justify-items: end;
+}
+
+.onPhone {
+  display: none;
+}
+
+/* The expanded body sits under the row, indented past the accent bar. */
+.body {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 0 var(--space-4) calc(4px + var(--space-3));
+  animation: reveal 150ms ease-out;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* --- Phones: no frame; each row is its own glass card (MobileShell) ------- */
+@media (max-width: 640px) {
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    padding: 0;
+    border: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  .head {
+    display: none;
+  }
+
+  .item {
+    display: grid;
+  }
+
+  .row,
+  .body {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
+    backdrop-filter: blur(var(--blur-md)) saturate(140%);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      var(--shadow-glass);
+  }
+
+  .row {
+    padding: 2px 4px 2px var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+
+  .main {
+    grid-template-columns: 4px minmax(0, 1fr) auto;
+  }
+
+  .rest,
+  .routing {
+    display: none;
+  }
+
+  .onPhone {
+    display: inline;
+  }
+
+  .avail {
+    display: grid;
+    justify-items: end;
+  }
+
+  .avail .onPhone {
+    font: var(--type-caption);
+    color: var(--text-muted);
+  }
+
+  .body {
+    margin-top: calc(-1 * var(--space-2));
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+  }
+}

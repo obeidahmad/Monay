@@ -1,0 +1,152 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-amount);
+}
+
+.table th,
+.table td {
+  padding: 10px var(--space-3);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table thead th {
+  padding-block: var(--space-2);
+}
+
+.table th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.table tbody tr + tr > * {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Fixed column colours. */
+.name {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.budget {
+  color: var(--col-budget);
+}
+
+.paid {
+  color: var(--col-paid);
+}
+
+.dim {
+  color: var(--col-dim);
+}
+
+.table .actions {
+  width: 44px;
+  padding: 0;
+}
+
+/* A value you can click to edit: looks like the text it replaces. */
+.value {
+  margin: -4px -8px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+  transition: background-color 150ms ease-out;
+}
+
+.value:hover {
+  background: var(--surface-raised);
+}
+
+.editing {
+  display: inline-grid;
+  justify-items: end;
+  gap: var(--space-1);
+  margin: -5px -9px;
+}
+
+.input {
+  width: 124px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--field-fill);
+  color: var(--text-strong);
+  font: inherit;
+  text-align: right;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.problem {
+  max-width: 260px;
+  color: var(--error);
+  font: var(--type-field-error);
+  text-align: right;
+  white-space: normal;
+}
+
+/* --- Stacked rows (narrow screens) --------------------------------------- */
+.stack {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stackRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.stackRow + .stackRow {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.stackMain {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: var(--type-amount);
+  text-align: left;
+}
+
+.stackTop {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-weight: 700;
+}
+
+.trio {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.trio b {
+  display: block;
+  font-weight: 600;
+}

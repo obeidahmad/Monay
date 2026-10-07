@@ -1,0 +1,108 @@
+/* The default trigger: a round ⋯ button that stays quiet until hovered. */
+.trigger {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font: 700 18px/1 var(--font-sans);
+  transition: background-color 150ms ease-out;
+}
+
+.trigger:hover {
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+
+.menu {
+  /* Undo the UA's centred popover; Menu.tsx sets top/left from the trigger. */
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  min-width: 184px;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 6px;
+  border-radius: var(--radius-md);
+  color: var(--text);
+  visibility: hidden;
+}
+
+.menu[data-placed] {
+  visibility: visible;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-strong);
+  font: 600 14px/20px var(--font-sans);
+  text-align: left;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: var(--surface-raised);
+}
+
+.item:focus-visible {
+  outline-offset: -2px;
+}
+
+.item:disabled {
+  opacity: 0.4;
+}
+
+.danger {
+  color: var(--error);
+}
+
+.icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.danger .icon {
+  color: inherit;
+}
+
+.text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check {
+  color: var(--ok);
+  font-weight: 800;
+}
+
+.divider {
+  height: 1px;
+  margin: 6px 4px;
+  border: 0;
+  background: var(--border-subtle);
+}
+
+@media (max-width: 640px) {
+  .trigger {
+    width: 44px;
+    height: 44px;
+  }
+
+  .item {
+    min-height: 44px;
+  }
+}

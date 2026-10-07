@@ -1,0 +1,18 @@
+.trigger {
+  width: auto;
+  height: auto;
+  padding: 2px;
+  background: none;
+}
+
+.trigger:hover {
+  background: var(--surface-raised);
+}
+
+@media (max-width: 640px) {
+  .trigger {
+    width: auto;
+    height: auto;
+    padding: 6px; /* 32px avatar + padding = a 44px target */
+  }
+}

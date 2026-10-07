@@ -1,0 +1,30 @@
+.shell {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.main {
+  width: 100%;
+  max-width: 1360px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-7) var(--space-7);
+}
+
+@media (max-width: 1120px) {
+  .main {
+    padding: var(--space-5) var(--space-5) var(--space-7);
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* space-4 gutters; room at the bottom for the tab bar and floating button. */
+  .main {
+    padding: var(--space-4) var(--space-4) calc(160px + env(safe-area-inset-bottom));
+  }
+}

@@ -1,0 +1,31 @@
+/* Layout shared by the forms inside Sheets. */
+
+/* A short field next to a long one: day + description. */
+.pair {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+/* An action inside a form, with the sentence that explains it. */
+.group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.note {
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.note b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+@media (max-width: 400px) {
+  .pair {
+    grid-template-columns: 1fr;
+  }
+}

@@ -20,6 +20,16 @@ dist/
 # --- Generated at build time by hatch-vcs (version derived from the git tag) ---
 monay/_version.py
 
+# --- Web app (web/) ---
+node_modules/
+# Generated on every dev run and build (web/package.json "gen:*"): the API's
+# OpenAPI document, the TypeScript types made from it, and the CSS made from
+# the design tokens. Their sources are monay/api/schemas.py and
+# web/design/tokens.json — those are what gets committed.
+web/openapi.json
+web/src/api/schema.gen.ts
+web/src/styles/tokens.gen.css
+
 # --- Monay user data: the database holds REAL finances — never commit it ---
 monay.db
 *.db

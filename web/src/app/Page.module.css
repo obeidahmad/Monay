@@ -1,0 +1,71 @@
+.page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Working content wide on the left, History narrow on the right. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 312px;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.single {
+  display: grid;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.aside {
+  position: sticky;
+  top: var(--space-5);
+  min-width: 0;
+}
+
+/* The floating primary action — phones only. */
+.fab {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aside {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .page,
+  .content {
+    gap: var(--space-3);
+  }
+
+  /* History lives under More on a phone. */
+  .aside {
+    display: none;
+  }
+
+  .fab {
+    position: fixed;
+    right: var(--space-4);
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--action);
+    color: var(--on-action);
+    box-shadow: var(--shadow-modal);
+  }
+}

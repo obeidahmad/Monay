@@ -1,0 +1,9 @@
+dist
+node_modules
+package-lock.json
+# generated — see package.json "gen:*"
+openapi.json
+src/api/schema.gen.ts
+src/styles/tokens.gen.css
+# vendored from the Monay design system; keep it byte-for-byte
+design/tokens.json

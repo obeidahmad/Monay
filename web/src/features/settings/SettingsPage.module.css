@@ -1,0 +1,59 @@
+.profiles {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+}
+
+.profile + .profile {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.profileMain {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.profileText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.profileName {
+  overflow: hidden;
+  font: var(--type-title-widget);
+  color: var(--text-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about,
+.appearance {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+/* On glass the wordmark takes the text colour (never the mint, never a blur). */
+.wordmark {
+  color: var(--text-strong);
+}

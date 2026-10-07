@@ -1,0 +1,198 @@
+.field {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* The label, with room for a small choice at the right of the same line. */
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 14px;
+}
+
+/* Inputs sit on field-fill inside glass: radius-sm, 1px border-strong, 48px. */
+.control {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--field-fill);
+  color: var(--text-strong);
+  font: var(--type-input);
+}
+
+.control::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Focus swaps the outline for a 2px info ring. */
+.control:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.numeric {
+  text-align: right;
+}
+
+.error {
+  font: var(--type-field-error);
+  color: var(--error);
+}
+
+/* --- Select --- */
+.selectWrap {
+  position: relative;
+}
+
+.select {
+  appearance: none;
+  padding-right: 40px;
+  text-overflow: ellipsis;
+}
+
+.withSwatch {
+  padding-left: 34px;
+}
+
+.swatch {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* --- Segmented: a pill track, the chosen option lifted --- */
+.segmented {
+  display: inline-flex;
+  justify-self: start;
+  gap: var(--space-1);
+  max-width: 100%;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+}
+
+.segment {
+  min-height: 30px;
+  padding: 6px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-muted);
+  font: 700 13px/18px var(--font-sans);
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.segment:hover {
+  color: var(--text-strong);
+}
+
+.chosen {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+/* On a label's line: small enough not to push the label around. */
+.compact {
+  padding: 3px;
+}
+
+.compact .segment {
+  min-height: 24px;
+  padding: 3px 12px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* --- Day stepper --- */
+.stepper {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: stretch;
+  min-height: 48px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--field-fill);
+  overflow: hidden;
+}
+
+.stepper:focus-within {
+  outline: 2px solid var(--info);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  transition: background-color 150ms ease-out;
+}
+
+.step:hover:not(:disabled) {
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+
+.step:disabled {
+  opacity: 0.4;
+}
+
+.step:focus-visible,
+.stepValue:focus-visible {
+  outline: none;
+}
+
+.step:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.stepValue {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--text-strong);
+  font: var(--type-input);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .segment {
+    min-height: 36px;
+  }
+
+  .compact .segment {
+    min-height: 32px;
+  }
+}

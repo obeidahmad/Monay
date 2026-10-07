@@ -1,0 +1,81 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: 72px;
+  height: 100dvh;
+  padding: var(--space-5) 6px;
+}
+
+.brand {
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+/* Icon over label; `label` type, but in sentence case. */
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-2) 2px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font: 700 10.5px/14px var(--font-sans);
+  text-decoration: none;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.item:hover {
+  color: var(--text-strong);
+}
+
+.selected {
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+
+/* The tab bar floats as a glass pill 12px above the bottom edge. */
+.tabbar {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: var(--space-4);
+  z-index: 30;
+  display: none;
+  gap: var(--space-1);
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-glass);
+}
+
+.tabbar .item {
+  flex: 1;
+  width: auto;
+  height: auto;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    display: none;
+  }
+
+  .tabbar {
+    display: flex;
+  }
+}
