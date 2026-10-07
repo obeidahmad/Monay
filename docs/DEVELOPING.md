@@ -227,6 +227,10 @@ with uow:
     uow.commit()                 # atomic; rollback on exception
 ```
 
+A section also stores how it looks in the web app — a palette slot (`color`,
+1–8) and an icon name (`icon`), both optional and carried forward on close. The
+engine never reads them.
+
 The schema is nine tables (`schema.py`): `profiles`, `months`, `pockets`,
 `sections`, `fields`, `incomes`, `transactions`, `transfers`, `schema_version`.
 Everything is scoped by profile; structure is snapshot per month and copied
@@ -371,9 +375,9 @@ the essentials:
 | `src/styles/tokens.gen.css` | `design/tokens.json` | components reference CSS variables only; re-syncing the design system is "replace `tokens.json`" |
 
 **The design system is the spec.** `web/design/tokens.json` is vendored from
-the Monay design system, and `src/components/` holds its components under the
-names it gives them (`Widget`, `SectionRow`, `FieldTable`, `Sheet`, `Toast`, …),
-each with a CSS module beside it. No component hard-codes a colour, a radius or
+the Monay design system, and `src/components/` holds the building blocks
+(`Widget`, `Button`, `Sheet`, `Toast`, `SectionIcon`, the charts in
+`charts.tsx`, …), each with a CSS module beside it. No component hard-codes a colour, a radius or
 a font: if a value isn't a token, it doesn't belong in the stylesheet.
 
 **Data flow.** `api/queries.ts` is the only place that talks to the server.

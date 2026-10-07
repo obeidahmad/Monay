@@ -57,3 +57,42 @@
 .wordmark {
   color: var(--text-strong);
 }
+
+.months {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.month {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  transition: background-color 150ms ease-out;
+}
+
+.month:hover,
+.month[aria-current="true"] {
+  background: var(--surface-raised);
+}
+
+.monthName {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.monthName b {
+  color: var(--text-strong);
+  font: var(--type-title-widget);
+}

@@ -1,15 +1,17 @@
-import { useHealth } from "../../api/queries";
+import { useHealth, useMonths } from "../../api/queries";
+import { useMonthView } from "../../app/month";
 import { Page } from "../../app/Page";
 import { useProfile } from "../../app/profile";
 import { useSheet } from "../../app/sheets";
 import { useTheme, type Appearance } from "../../app/theme";
 import { Avatar } from "../../components/Avatar";
 import { Button } from "../../components/Button";
-import { Wordmark } from "../../components/Logo";
+import { Logo } from "../../components/Logo";
 import { Menu } from "../../components/Menu";
 import { StatusChip } from "../../components/StatusChip";
 import { SegmentedControl } from "../../components/TextField";
 import { Widget } from "../../components/Widget";
+import { formatMoney } from "../../lib/money";
 import { initial } from "../../lib/text";
 import styles from "./SettingsPage.module.css";
 
@@ -25,10 +27,13 @@ export function SettingsPage() {
   const { appearance, setAppearance } = useTheme();
   const open = useSheet();
   const health = useHealth();
+  const { profileId, month, view } = useMonthView();
+  const months = useMonths(profileId);
   const addProfile = () => open({ kind: "profile" });
 
   return (
     <Page
+      title="Settings"
       primary={{ label: "Add profile", onClick: addProfile }}
       actions={
         <Button variant="primary" onClick={addProfile}>
@@ -88,9 +93,33 @@ export function SettingsPage() {
         </div>
       </Widget>
 
+      <Widget title="History">
+        <ul className={styles.months}>
+          {(months.data ?? []).map((summary) => (
+            <li key={summary.key}>
+              <button
+                type="button"
+                className={styles.month}
+                aria-current={summary.key === month.key ? "true" : undefined}
+                onClick={() => view(summary.key)}
+              >
+                <span className={styles.monthName}>
+                  <b>{summary.label}</b>
+                  <StatusChip kind={summary.state}>{summary.state}</StatusChip>
+                </span>
+                <span className="caption">
+                  income {formatMoney(summary.income)} · spent {formatMoney(summary.spent)} ·
+                  leftovers {formatMoney(summary.leftovers)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Widget>
+
       <Widget title="About">
         <div className={styles.about}>
-          <Wordmark height={24} className={styles.wordmark} />
+          <Logo size={36} />
           <p className="caption">
             {health.data ? `Version ${health.data.version}` : "Zero-based budgeting"} ·{" "}
             <a href="/api/docs" target="_blank" rel="noreferrer">

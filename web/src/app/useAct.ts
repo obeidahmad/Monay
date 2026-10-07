@@ -17,14 +17,14 @@ interface Outcome {
  * Deletions come back with an undo token, so the toast offers Undo instead of
  * the app asking "are you sure?" first. A refusal ("this field still holds
  * 332.94 — transfer it away first") is shown as a heads-up toast: there is no
- * field to put it under.
+ * field to put it under. Resolves to whether the change went through.
  */
 export function useAct() {
   const toast = useToast();
   const { actions } = useMonthView();
 
   return useCallback(
-    async function act(run: () => Promise<Change>, outcome: Outcome): Promise<void> {
+    async function act(run: () => Promise<Change>, outcome: Outcome): Promise<boolean> {
       try {
         const change = await run();
         const token = change.undo_token;
@@ -35,10 +35,12 @@ export function useAct() {
             ? () => void act(() => actions.undo(token), { message: "Put back." })
             : undefined,
         });
+        return true;
       } catch (problem) {
         if (!(problem instanceof ApiError)) throw problem;
         // A stale month has already been announced where it was detected.
         if (!problem.stale) toast({ kind: "warn", message: problem.message });
+        return false;
       }
     },
     [actions, toast],

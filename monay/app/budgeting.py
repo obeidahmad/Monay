@@ -42,6 +42,7 @@ from monay.app.errors import BadUsageError, StaleRevisionError, UndoUnavailableE
 from monay.app.services import MonthSummary, summarize_month
 from monay.domain.closing import MonthCloser
 from monay.domain.entities import (
+    SECTION_COLORS,
     Field,
     Income,
     IncomeKind,
@@ -142,6 +143,8 @@ def month_revision(month: Month) -> str:
             s.rest_routing.kind.value,
             s.rest_routing.target,
             str(s.carried_rest.amount),
+            s.color,
+            s.icon,
         )
         for f in ordered_fields(s):
             put(
@@ -196,6 +199,17 @@ class MonthView:
     month: Month
     revision: str
     is_first: bool  # the profile's first month — CURRENT is hand-set here
+
+
+@dataclass(frozen=True)
+class MonthHistory:
+    summary: MonthSummary
+    month: Month
+
+
+def section_color(section: Section, index: int) -> int:
+    """The palette slot (1-8) a section shows in: its own choice, else by position."""
+    return section.color if section.color is not None else index % SECTION_COLORS + 1
 
 
 @dataclass(frozen=True)
@@ -414,15 +428,17 @@ class BudgetingService:
     # ---------------------------------------------------------------------
     # Reading
     # ---------------------------------------------------------------------
-    def summaries(self, profile_id: int) -> list[MonthSummary]:
-        """One summary per month, newest first (the History list)."""
+    def summaries(self, profile_id: int) -> list[MonthHistory]:
+        """Every month, newest first: its summary plus the month itself (the
+        charts break spending down by section)."""
         with self._uow_factory() as uow:
             self._profile(uow, profile_id)
-            out: list[MonthSummary] = []
+            out: list[MonthHistory] = []
             for key in sorted(uow.months.keys(profile_id), reverse=True):
                 month = uow.months.get(profile_id, key)
-                assert month is not None  # key came from this profile's months
-                out.append(summarize_month(month))
+                if month is None:  # deleted by another request since keys()
+                    continue
+                out.append(MonthHistory(summarize_month(month), month))
             return out
 
     def month(self, profile_id: int, key: MonthKey) -> MonthView:
@@ -486,14 +502,20 @@ class BudgetingService:
         kind: SectionKind,
         allocation: Money | Percentage,
         routing: RestRouting | None = None,
+        *,
+        color: int | None = None,
+        icon: str | None = None,
     ) -> Changed:
         def change(d: _Draft) -> None:
-            if isinstance(allocation, Percentage):
-                d.month.add_section(
-                    name, kind, percentage=allocation, rest_routing=routing
-                )
-            else:
-                d.month.add_section(name, kind, amount=allocation, rest_routing=routing)
+            d.month.add_section(
+                name,
+                kind,
+                percentage=allocation if isinstance(allocation, Percentage) else None,
+                amount=allocation if isinstance(allocation, Money) else None,
+                rest_routing=routing,
+                color=color,
+                icon=icon,
+            )
 
         return self._change(ref, change)
 
@@ -506,6 +528,8 @@ class BudgetingService:
         allocation: Money | Percentage | None = None,
         routing: RestRouting | None = None,
         position: int | None = None,
+        color: int | None = None,
+        icon: str | None = None,
     ) -> Changed:
         def change(d: _Draft) -> None:
             section = d.section(index)
@@ -515,6 +539,8 @@ class BudgetingService:
                 percentage=allocation if isinstance(allocation, Percentage) else None,
                 amount=allocation if isinstance(allocation, Money) else None,
                 rest_routing=routing,
+                color=color,
+                icon=icon,
             )
             if position is not None:
                 _move_section(d.month, section, position)

@@ -6,7 +6,8 @@ import { Root } from "./app/Root";
 import { ThemeProvider } from "./app/ThemeProvider";
 import { ToastProvider } from "./app/ToastProvider";
 import { BudgetPage } from "./features/budget/BudgetPage";
-import { HistoryPage } from "./features/history/HistoryPage";
+import { SectionPage } from "./features/budget/SectionPage";
+import { AnalyticsPage } from "./features/analytics/AnalyticsPage";
 import { PocketsPage } from "./features/pockets/PocketsPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { TransactionsPage } from "./features/transactions/TransactionsPage";
@@ -28,9 +29,10 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/budget" replace /> },
       { path: "budget", element: <BudgetPage /> },
+      { path: "budget/:index", element: <SectionPage /> },
+      { path: "analytics", element: <AnalyticsPage /> },
       { path: "transactions", element: <TransactionsPage /> },
       { path: "pockets", element: <PocketsPage /> },
-      { path: "history", element: <HistoryPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "*", element: <Navigate to="/budget" replace /> },
     ],

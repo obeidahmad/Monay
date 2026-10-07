@@ -132,9 +132,15 @@ class FieldOut(BaseModel):
     pocket_index: int
 
 
+IconName = Annotated[str, StringConstraints(pattern=r"^[a-z0-9-]{0,40}$")]
+ColorSlot = Annotated[int, Constraint(ge=1, le=8)]
+
+
 class SectionOut(BaseModel):
     index: int
     name: str
+    color: int  # palette slot 1-8 (design tokens section-1 ... section-8)
+    icon: str | None
     kind: SectionKind
     allocation: AllocationOut
     rest_routing: RestRoutingModel
@@ -215,6 +221,12 @@ class ChangeOut(BaseModel):
     undo_token: str | None = None
 
 
+class SectionSpendOut(BaseModel):
+    name: str
+    color: int
+    spent: MoneyText
+
+
 class MonthSummaryOut(BaseModel):
     key: MonthKeyText
     label: str
@@ -222,6 +234,7 @@ class MonthSummaryOut(BaseModel):
     income: MoneyText
     spent: MoneyText
     leftovers: MoneyText
+    sections: list[SectionSpendOut]  # spending by section, in display order
 
 
 class RestCarryOut(BaseModel):
@@ -263,10 +276,14 @@ class SectionCreate(_Input):
     kind: SectionKind
     allocation: AmountOrPercent
     rest_routing: RestRoutingModel | None = None
+    color: ColorSlot | None = None  # absent = by position
+    icon: IconName | None = None
 
 
 class SectionUpdate(_Input):
     name: Name | None = None
+    color: ColorSlot | None = None
+    icon: IconName | None = None  # "" removes the icon
     allocation: AmountOrPercent | None = None
     rest_routing: RestRoutingModel | None = None
     position: Index | None = None  # where to move it to, in display order

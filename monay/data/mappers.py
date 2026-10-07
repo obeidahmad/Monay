@@ -112,6 +112,8 @@ def _insert_children(conn: sa.Connection, month_id: int, month: Month) -> None:
                     rest_routing=s.rest_routing.kind.value,
                     rest_target=s.rest_routing.target,
                     carried_rest=s.carried_rest,
+                    color=s.color,
+                    icon=s.icon,
                 )
             )
         )
@@ -238,6 +240,8 @@ def load_month(conn: sa.Connection, profile_id: int, key: MonthKey) -> Month | N
             rest_routing=RestRouting(sr.rest_routing, sr.rest_target),
             carried_rest=sr.carried_rest,
             id=sr.id,
+            color=sr.color,
+            icon=sr.icon,
         )
         month.sections.append(s)
         for fr in conn.execute(

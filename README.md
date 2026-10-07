@@ -161,24 +161,27 @@ close routes to next month's income, back into the section, or into another one.
 
 ## 🖱️ Using the web app
 
-Four tabs — **Budget**, **Transactions**, **Pockets**, **Settings** — with
-**History** alongside.
+Navigation sits on the left: **Budget**, **Transactions**, **Pockets** and
+**Analytics**, with settings and your profile below. The month you are looking
+at is a button at the top right — past months are one click away there.
 
-- **Start** by naming a profile, then on the Budget tab **Add income**, **Add
-  section** (tax / pre / post, with its share), and inside a section **Add
-  field** (budget, max, pocket; your first month also lets you type what each
-  pot already holds).
+- **Budget** opens on the month at a glance — income, how much of it is spent,
+  what is left — then where the income comes from, and a card per **section**
+  with its icon, its colour and a bar of spent against available.
+- **Click a section** to open its own page: its fields with a meter each, a
+  gauge of how much is used, spending by field, the month's trend, and every
+  transaction in it. Add and edit fields there.
+- **Make a section yours**: pick its colour and icon when you add or edit it.
 - **Spend** with **Add transaction**: pick a field (the ones you used last are
   one click away), type an amount — `15.71+1.35` works, and the result and what
   the field will have left show as you type — and save.
-- **Edit in place**: click a section row to open it; on desktop, click a
-  budget, max or current value in the table to change it (Enter saves, Escape
-  cancels). Everything else is in each row's `⋯` menu.
+- **Analytics** answers one question per chart: where spending is heading,
+  what share went where, where income goes, which days you spent on, and how
+  the months compare.
 - **Undo instead of "are you sure?"**: deleting something happens immediately
   and offers **Undo**. Only closing a month and deleting a profile ask first,
   because those can't be taken back.
-- **Close month** shows what will carry forward before you confirm. Closed
-  months stay readable from **History**.
+- **Close month** shows what will carry forward before you confirm.
 - **Appearance** (Settings): dark, light, or follow your system.
 
 ## 📖 Using the terminal app

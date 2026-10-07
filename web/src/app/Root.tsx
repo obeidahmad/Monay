@@ -4,7 +4,7 @@ import { ApiError, type Change, type Profile } from "../api/client";
 import { useMonth, useMonthActions, useProfiles, type MonthActions } from "../api/queries";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
-import { Wordmark } from "../components/Logo";
+import { Logo } from "../components/Logo";
 import { Widget } from "../components/Widget";
 import { Welcome } from "../features/onboarding/Welcome";
 import { readStored, writeStored } from "../lib/storage";
@@ -49,7 +49,7 @@ export function Root() {
 function Splash({ children }: { children?: ReactNode }) {
   return (
     <div className={styles.splash}>
-      <Wordmark height={32} className={styles.wordmark} />
+      <Logo size={44} />
       {children && <Widget className={styles.card}>{children}</Widget>}
     </div>
   );
@@ -150,7 +150,7 @@ function MonthGate({ profile }: { profile: Profile }) {
 
   if (!state) {
     return (
-      <AppShell>
+      <AppShell bare>
         {query.isError && (
           <Widget>
             <EmptyState

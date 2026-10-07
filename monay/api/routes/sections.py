@@ -35,6 +35,8 @@ def add_section(body: SectionCreate, ref: Ref, service: Service) -> ChangeOut:
             body.kind,
             parsing.allocation(body.allocation),
             None if body.rest_routing is None else parsing.routing(body.rest_routing),
+            color=body.color,
+            icon=body.icon,
         )
     )
 
@@ -58,6 +60,8 @@ def edit_section(
                 else parsing.routing(body.rest_routing)
             ),
             position=body.position,
+            color=body.color,
+            icon=body.icon,
         )
     )
 

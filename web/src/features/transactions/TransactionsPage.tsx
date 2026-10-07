@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
-import type { Month, Transaction, Transfer } from "../../api/client";
+import type { Month, Section, Transaction, Transfer } from "../../api/client";
 import { useMonthView } from "../../app/month";
 import { Page } from "../../app/Page";
 import { useSheet } from "../../app/sheets";
@@ -10,11 +10,11 @@ import { Button } from "../../components/Button";
 import { Chip, ChipRow } from "../../components/Chip";
 import { EmptyState } from "../../components/EmptyState";
 import { Menu } from "../../components/Menu";
+import { SectionIcon } from "../../components/SectionIcon";
 import { TransactionRow } from "../../components/TransactionRow";
 import { Widget } from "../../components/Widget";
 import { sectionAccent } from "../../lib/budget";
 import { dayLabel } from "../../lib/dates";
-import { initial } from "../../lib/text";
 import styles from "./TransactionsPage.module.css";
 
 type Entry =
@@ -45,6 +45,10 @@ function matches(entry: Entry, text: string, section: number | null): boolean {
   return words.some((word) => word.toLowerCase().includes(text));
 }
 
+function IconOf({ section }: { section: Section | undefined }) {
+  return <SectionIcon color={section?.color ?? 1} icon={section?.icon} kind={section?.kind} />;
+}
+
 /** The Transactions tab: everything that happened this month, searchable. */
 export function TransactionsPage() {
   const { month, readOnly, actions } = useMonthView();
@@ -59,6 +63,8 @@ export function TransactionsPage() {
 
   return (
     <Page
+      title="Transactions"
+      subtitle={`${month.label} · ${all.length === 1 ? "1 entry" : `${all.length} entries`}`}
       primary={{ label: "Add transaction", onClick: addTransaction }}
       actions={
         <>
@@ -108,7 +114,7 @@ export function TransactionsPage() {
                 .map((option) => (
                   <Chip
                     key={option.index}
-                    accent={sectionAccent(option.index)}
+                    accent={sectionAccent(option.color)}
                     selected={section === option.index}
                     removable
                     onClick={() => setSection(section === option.index ? null : option.index)}
@@ -127,11 +133,7 @@ export function TransactionsPage() {
                     <TransactionRow
                       key={`t${entry.item.number}`}
                       kind="spend"
-                      avatar={
-                        <Avatar accent={sectionAccent(entry.item.field.section_index)}>
-                          {initial(entry.item.field.field)}
-                        </Avatar>
-                      }
+                      avatar={<IconOf section={month.sections[entry.item.field.section_index]} />}
                       title={entry.item.field.field}
                       detail={[
                         `#${entry.item.number}`,

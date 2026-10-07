@@ -91,7 +91,7 @@ export function TransferSheet({ from: preset, onClose }: TransferSheetProps) {
         value={from}
         onChange={setFrom}
         error={errors.fields.from_field}
-        accent={source ? sectionAccent(source.section.index) : null}
+        accent={source ? sectionAccent(source.section.color) : null}
         hint={source && `Holds ${formatMoney(source.field.left)}.`}
       >
         <option value="" disabled>
@@ -107,7 +107,7 @@ export function TransferSheet({ from: preset, onClose }: TransferSheetProps) {
         error={
           errors.fields.to_field ?? (sameField ? "Choose a different field to move it to." : null)
         }
-        accent={target ? sectionAccent(target.section.index) : null}
+        accent={target ? sectionAccent(target.section.color) : null}
         hint={
           target &&
           (room === null

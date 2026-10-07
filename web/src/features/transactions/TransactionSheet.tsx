@@ -144,7 +144,7 @@ export function TransactionSheet({ edit, field: preset, onClose }: TransactionSh
         value={target}
         onChange={setTarget}
         error={errors.fields.field}
-        accent={chosen ? sectionAccent(chosen.section.index) : null}
+        accent={chosen ? sectionAccent(chosen.section.color) : null}
       >
         <option value="" disabled>
           Choose a field
@@ -161,7 +161,7 @@ export function TransactionSheet({ edit, field: preset, onClose }: TransactionSh
                 <Chip
                   key={key}
                   selected={key === target}
-                  accent={sectionAccent(option.section.index)}
+                  accent={sectionAccent(option.section.color)}
                   onClick={() => setTarget(key)}
                 >
                   {option.field.name}

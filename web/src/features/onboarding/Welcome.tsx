@@ -3,7 +3,7 @@ import { useProfileActions } from "../../api/queries";
 import { PROFILE_KEY } from "../../app/profile";
 import { useSubmit } from "../../app/useSubmit";
 import { Button } from "../../components/Button";
-import { Wordmark } from "../../components/Logo";
+import { Logo } from "../../components/Logo";
 import { TextField } from "../../components/TextField";
 import { Widget } from "../../components/Widget";
 import { currentKey } from "../../lib/dates";
@@ -34,7 +34,7 @@ export function Welcome() {
 
   return (
     <main className={styles.welcome}>
-      <Wordmark height={36} className={styles.wordmark} />
+      <Logo size={52} />
       <Widget className={styles.card}>
         <form className={styles.form} onSubmit={create} noValidate>
           <div>

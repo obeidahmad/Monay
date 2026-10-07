@@ -4,12 +4,16 @@ import type { Field, Month, Section } from "../api/client";
 import { formatMoney, units, type Units } from "./money";
 
 /**
- * A section's accent, by its position: `section-1` … `section-8`, then around
- * again. The same position → colour rule the terminal app uses, so a section
- * keeps its colour everywhere it appears.
+ * A section's accent from its palette slot (1–8): the colour chosen for it, or
+ * the one its position gives it. A section keeps that colour everywhere.
  */
-export function sectionAccent(index: number): string {
-  return `var(--section-${(index % 8) + 1})`;
+export function sectionAccent(color: number): string {
+  return `var(--section-${color})`;
+}
+
+/** A plain number for a chart's geometry (never for an amount that is printed). */
+export function num(value: string): number {
+  return Number(value);
 }
 
 export const INCOME_ACCENT = "var(--income-accent)";

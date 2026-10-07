@@ -71,6 +71,8 @@ class MonthCloser:
                 percentage=s.percentage,  # value objects are immutable — safe to share
                 amount=s.amount,
                 rest_routing=s.rest_routing,
+                color=s.color,
+                icon=s.icon,
             )
             for f in sorted(s.fields, key=lambda f: f.position):
                 new.fields.append(

@@ -1,30 +1,207 @@
 .shell {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   min-height: 100dvh;
+}
+
+/* --- the rail: logo on top, navigation centred vertically, account below --- */
+.rail {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  height: 100dvh;
+  padding: var(--space-5) 0;
+}
+
+.brand {
+  border-radius: 14px;
+  transition: transform 150ms ease-out;
+}
+
+.brand:hover {
+  transform: scale(1.06) rotate(-3deg);
+}
+
+.foot {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+/* --- the navigation pill --- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--shadow-glass);
+}
+
+.railTabs {
+  flex-direction: column;
+  align-self: center; /* vertically centred in the rail */
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 76px;
+  padding: 12px 4px 10px;
+  border-radius: 20px;
+  color: var(--text-muted);
+  font: 700 11px/14px var(--font-sans);
+  text-decoration: none;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+.tab:hover {
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+  color: var(--text-strong);
+}
+
+.active,
+.active:hover {
+  background: linear-gradient(140deg, #5cf0b0, var(--brand-mint) 55%, #12a8b8);
+  color: var(--brand-ink);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--brand-mint) 32%, transparent);
+}
+
+.bottom {
+  display: none;
+}
+
+.round {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  color: var(--text);
+  transition: background-color 150ms ease-out;
+}
+
+.round:hover,
+.roundActive {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+/* --- the page side --- */
+.body {
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-6) 0 0;
+}
+
+.grow {
+  flex: 1;
+}
+
+.topBrand,
+.topProfile {
+  display: none;
+}
+
+.month {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: auto;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  color: var(--text-strong);
+  font: 700 14px/20px var(--font-sans);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ok);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+.closed {
+  background: var(--text-muted);
+  box-shadow: none;
 }
 
 .main {
   width: 100%;
-  max-width: 1360px;
-  min-width: 0;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: var(--space-5) var(--space-7) var(--space-7);
+  padding: 0 var(--space-6) var(--space-7) 0;
 }
 
-@media (max-width: 1120px) {
+/* On desktop the month button lives in the page header (app/Page.tsx). */
+@media (min-width: 641px) {
+  .top {
+    display: none;
+  }
+
   .main {
-    padding: var(--space-5) var(--space-5) var(--space-7);
+    padding-top: var(--space-6);
   }
 }
 
+/* Phones: a top bar, and the navigation as a pill centred at the bottom. */
 @media (max-width: 640px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* space-4 gutters; room at the bottom for the tab bar and floating button. */
+  .rail {
+    display: none;
+  }
+
+  .top {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .topBrand,
+  .topProfile {
+    display: block;
+  }
+
+  .bottom {
+    position: fixed;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    left: 50%;
+    z-index: 30;
+    display: flex;
+    transform: translateX(-50%);
+  }
+
+  .bottom .tab {
+    width: 78px;
+    padding: 8px 4px;
+  }
+
   .main {
-    padding: var(--space-4) var(--space-4) calc(160px + env(safe-area-inset-bottom));
+    padding: var(--space-2) var(--space-4) calc(150px + env(safe-area-inset-bottom));
   }
 }

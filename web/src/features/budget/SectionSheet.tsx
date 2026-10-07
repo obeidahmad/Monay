@@ -16,6 +16,7 @@ import { isPercentage } from "../../lib/budget";
 import { evaluate } from "../../lib/expression";
 import { plain } from "../../lib/money";
 import { SheetActions } from "../forms";
+import { AppearancePicker } from "./AppearancePicker";
 import styles from "../sheets.module.css";
 
 interface SectionSheetProps {
@@ -68,6 +69,10 @@ export function SectionSheet({ edit, onClose }: SectionSheetProps) {
   const [type, setType] = useState<"amount" | "percent">(original.type);
   const [value, setValue] = useState(original.value);
   const [routing, setRouting] = useState(original.routing);
+  // The colour a new section would get by its position, until one is picked.
+  const nextColor = (month.sections.length % 8) + 1;
+  const [color, setColor] = useState(edit?.color ?? nextColor);
+  const [icon, setIcon] = useState(edit?.icon ?? "");
 
   // Only a pre-section may take a fixed amount.
   const effectiveType = kind === "pre" ? type : "percent";
@@ -113,6 +118,8 @@ export function SectionSheet({ edit, onClose }: SectionSheetProps) {
           kind,
           allocation,
           rest_routing: toRouting(routing),
+          color,
+          ...(icon ? { icon } : {}),
         });
         toast({ message: `Section ${name.trim()} added.` });
       } else {
@@ -122,6 +129,8 @@ export function SectionSheet({ edit, onClose }: SectionSheetProps) {
           body.allocation = allocation;
         }
         if (routing !== original.routing) body.rest_routing = toRouting(routing);
+        if (color !== edit.color) body.color = color;
+        if (icon !== (edit.icon ?? "")) body.icon = icon;
         if (Object.keys(body).length > 0) {
           await actions.editSection(edit.index, body);
           toast({ message: `Section ${name.trim()} updated.` });
@@ -164,6 +173,14 @@ export function SectionSheet({ edit, onClose }: SectionSheetProps) {
         placeholder="Needs"
         maxLength={60}
         autoFocus
+      />
+
+      <AppearancePicker
+        color={color}
+        icon={icon}
+        kind={edit?.kind ?? kind}
+        onColor={setColor}
+        onIcon={setIcon}
       />
 
       {edit ? (

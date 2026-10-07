@@ -12,6 +12,7 @@ from decimal import Decimal
 from monay.app.budgeting import (
     Changed,
     ClosePreview,
+    MonthHistory,
     MonthView,
     ProfileInfo,
     ordered_fields,
@@ -20,9 +21,10 @@ from monay.app.budgeting import (
     ordered_sections,
     post_percentage_total,
     post_pool,
+    section_color,
     unallocated_income,
 )
-from monay.app.services import MonthSummary, month_label
+from monay.app.services import month_label
 from monay.domain.entities import AllocKind, Section
 from monay.domain.money import Money
 from monay.domain.values import RestRouting
@@ -42,6 +44,7 @@ from .schemas import (
     RestCarryOut,
     RestRoutingModel,
     SectionOut,
+    SectionSpendOut,
     TransactionOut,
     TransferOut,
 )
@@ -70,8 +73,17 @@ def profile_out(info: ProfileInfo) -> ProfileOut:
     )
 
 
-def summary_out(summary: MonthSummary) -> MonthSummaryOut:
+def summary_out(history: MonthHistory) -> MonthSummaryOut:
+    summary = history.summary
     return MonthSummaryOut(
+        sections=[
+            SectionSpendOut(
+                name=s.name,
+                color=section_color(s, i),
+                spent=money(sum((f.paid for f in s.fields), Money.zero())),
+            )
+            for i, s in enumerate(ordered_sections(history.month))
+        ],
         key=str(summary.key),
         label=month_label(summary.key),
         state=summary.state,
@@ -136,6 +148,8 @@ def month_out(view: MonthView) -> MonthOut:
             SectionOut(
                 index=si,
                 name=s.name,
+                color=section_color(s, si),
+                icon=s.icon,
                 kind=s.kind,
                 allocation=_allocation(s),
                 rest_routing=_routing(s.rest_routing),

@@ -77,6 +77,8 @@ sections = sa.Table(
     sa.Column("rest_routing", sa.String, nullable=False),  # income | self | section
     sa.Column("rest_target", sa.String),  # section name when routing == section
     sa.Column("carried_rest", MoneyType, nullable=False),
+    sa.Column("color", sa.Integer),  # palette slot 1–8; null = by position
+    sa.Column("icon", sa.String),  # icon name chosen in the web app; null = none
     sa.UniqueConstraint("month_id", "name", name="uq_section_month_name"),
 )
 

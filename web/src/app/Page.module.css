@@ -1,71 +1,93 @@
 .page {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
-/* Working content wide on the left, History narrow on the right. */
-.columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 312px;
+.header {
+  display: flex;
+  align-items: center;
   gap: var(--space-4);
-  align-items: start;
+  min-height: 56px;
 }
 
-.single {
-  display: grid;
-}
-
-.content {
-  display: grid;
-  gap: var(--space-4);
+.titles {
+  flex: 1;
   min-width: 0;
 }
 
-.aside {
-  position: sticky;
-  top: var(--space-5);
+.title {
+  overflow: hidden;
+  color: var(--text-strong);
+  font: 800 34px/40px var(--font-sans);
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font: var(--type-body);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.bannerText {
+  flex: 1;
   min-width: 0;
 }
 
-/* The floating primary action — phones only. */
+.bannerText b {
+  color: var(--text-strong);
+}
+
 .fab {
   display: none;
 }
 
-@media (max-width: 1120px) {
-  .columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .aside {
-    position: static;
-  }
-}
-
 @media (max-width: 640px) {
-  .page,
-  .content {
-    gap: var(--space-3);
+  .page {
+    gap: var(--space-4);
   }
 
-  /* History lives under More on a phone. */
-  .aside {
+  .title {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .actions,
+  .month {
     display: none;
   }
 
   .fab {
     position: fixed;
     right: var(--space-4);
-    bottom: calc(84px + env(safe-area-inset-bottom));
+    bottom: calc(92px + env(safe-area-inset-bottom));
     z-index: 30;
     display: grid;
     place-items: center;
-    width: 56px;
-    height: 56px;
+    width: 58px;
+    height: 58px;
     border: 0;
     border-radius: var(--radius-pill);
-    background: var(--action);
-    color: var(--on-action);
-    box-shadow: var(--shadow-modal);
+    background: linear-gradient(140deg, #5cf0b0, var(--brand-mint) 55%, #12a8b8);
+    color: var(--brand-ink);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--brand-mint) 40%, transparent);
   }
 }

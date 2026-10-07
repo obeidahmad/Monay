@@ -1,0 +1,74 @@
+.picker {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--field-fill);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.color {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  transition: transform 150ms ease-out;
+}
+
+.color:hover {
+  transform: scale(1.12);
+}
+
+/* The chosen colour gets a ring — not just a different shade. */
+.chosen {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--text-strong);
+}
+
+.icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 6px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-muted);
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.icon:hover {
+  background: var(--surface-raised);
+  color: var(--text-strong);
+}
+
+.chosenIcon {
+  background: var(--action);
+  color: var(--on-action);
+}
+
+.chosenIcon:hover {
+  background: var(--action);
+  color: var(--on-action);
+}

@@ -14,6 +14,7 @@ from enum import StrEnum
 
 from .entities import (
     INCOME_SECTION_NAME,
+    SECTION_COLORS,
     AllocKind,
     Field,
     Income,
@@ -466,6 +467,8 @@ class Month:
         amount: Money | Numeric | None = None,
         rest_routing: RestRouting | None = None,
         position: int | None = None,
+        color: int | None = None,
+        icon: str | None = None,
     ) -> Section:
         self._require_open()
         self._reject_reserved_name(name)
@@ -482,6 +485,8 @@ class Month:
             else None,
             amount=money(amount) if amount is not None else None,
             rest_routing=rest_routing or RestRouting.to_income(),
+            color=self._color(color),
+            icon=icon or None,
         )
         self.sections.append(s)
         self.recompute()
@@ -506,9 +511,15 @@ class Month:
         amount: Money | Numeric | None = None,
         rest_routing: RestRouting | None = None,
         position: int | None = None,
+        color: int | None = None,
+        icon: str | None = None,
     ) -> None:
         self._require_open()
         s = self.section(name)
+        if color is not None:
+            s.color = self._color(color)
+        if icon is not None:
+            s.icon = icon or None  # "" clears it
         if new_name is not None and new_name != name:
             self._reject_reserved_name(new_name)
             if any(o.name == new_name for o in self.sections):
@@ -653,6 +664,12 @@ class Month:
 
     def _next_section_position(self) -> int:
         return max((s.position for s in self.sections), default=-1) + 1
+
+    @staticmethod
+    def _color(slot: int | None) -> int | None:
+        if slot is not None and not 1 <= slot <= SECTION_COLORS:
+            raise ValidationError(f"section colour must be 1–{SECTION_COLORS}")
+        return slot
 
     @staticmethod
     def _as_percentage(value: Percentage | PercentageInput) -> Percentage:

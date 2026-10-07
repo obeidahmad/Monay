@@ -48,19 +48,20 @@ src/
   app/               Root (profile → month → pages), AppShell, Page,
                      SheetHost, and the theme / toast / profile / month contexts
   components/        the design system's components, one file each
-  features/          budget · transactions · pockets · history · settings · onboarding
+  features/          budget (overview + a page per section) · transactions · pockets ·
+                     analytics · settings · onboarding
   lib/               money (bigint, half-even) · expression · dates · budget helpers
   styles/global.css  the ground and its orbs, glass, type helpers
 ```
 
 ## Working with the design system
 
-`src/components/` are the design system's components, under its names: `Widget`, `Button`, `NavTabs`, `MonthHeader`, `SectionRow`, `FieldTable`, `AllocationBar`, `TransactionRow`, `PocketCard`, `StatusChip`, `TextField`, `Sheet`, `ConfirmDialog`, `Toast`, `EmptyState`, `Logo`.
+`src/components/` holds the building blocks: `Widget`, `Button`, `Sheet`, `ConfirmDialog`, `Toast`, `Menu`, `TextField`, `StatusChip`, `SectionIcon`, `Logo`, and the charts (`charts.tsx`: trend, donut, columns, waterfall, heatmap, meter, gauge, stat tile).
 
 - **Tokens only.** Stylesheets reference `var(--…)` from `tokens.gen.css`: colours, type styles (`--type-title-widget`), spacing, radii, shadows, blur. Never a literal colour.
 - **Themes are token values.** `data-theme="light" | "dark"` on the root element pins one; without it the stylesheet follows the operating system.
 - **To re-sync** after the design system changes: replace `design/tokens.json` with its `tokens.json` and run `npm run gen:tokens`. Component markup follows the design system's component guidelines; update the matching file here when one changes.
-- Charts (trend, donut, waterfall, heatmap, meters) are specified in the design system but not built yet.
+- **Where this app departs from the design system's written layout**, on purpose: navigation is a left rail with the items centred vertically; the primary action is the brand mint; a section is a card that opens its own page (not an accordion row) and carries a chosen colour and icon; History is the month button, not a side column; income is its own card, not a row among the sections. The design system's README still describes the earlier layout and should be brought in line.
 
 ## Conventions
 
