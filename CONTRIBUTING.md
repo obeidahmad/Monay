@@ -21,9 +21,20 @@ dependencies, and running tools. There is no global `pip`; every command is
 git clone https://github.com/obeidahmad/Monay
 cd Monay
 uv sync --group dev     # venv + deps (fetches Python 3.14) + dev tools
-uv run python -m monay  # launch the app
+uv run python -m monay  # launch the terminal app
 uv run pytest           # run the suite
 ```
+
+The web app (`web/`) has its own toolchain — [Node.js](https://nodejs.org/) 24+
+and npm. It talks to the engine through the HTTP API, so run the two side by
+side:
+
+```bash
+uv run python -m monay.api              # the API, on http://127.0.0.1:8000
+cd web && npm install && npm run dev    # the UI, on http://localhost:5173
+```
+
+Or run both as they ship, in containers: `docker compose up --build`.
 
 To open and address issues/PRs from the terminal you'll also want the
 [GitHub CLI](https://cli.github.com/) authenticated once with `gh auth login`.
@@ -37,12 +48,12 @@ To open and address issues/PRs from the terminal you'll also want the
 2. Branch      Cut a branch off main, named for the issue
 3. Build       Implement; commit with conventional-commit messages
 4. PR          Open it: "Closes #<n>", conventional-commit title
-   ├─ CI fires:        ruff + format + mypy + pytest   ← HARD gate, blocks merge
+   ├─ CI fires:        Python gate + web gate + Docker build   ← HARD gate, blocks merge
    └─ Claude reviews:  posts a summary + inline comments, incl. a docs check
 5. Address     Fold in review comments, fix anything CI is unhappy about, push
    └─ repeat 4–5 until CI is green and the review is satisfied
 6. Merge       A maintainer squash-merges to main; the branch auto-deletes
-7. Release     (separate) tag vX.Y.Z to cut a binary release — see RELEASING.md
+7. Release     (separate) tag vX.Y.Z to cut a release — see RELEASING.md
 ```
 
 Testing and the docs check aren't separate end phases — they fold into the PR.
@@ -99,8 +110,19 @@ uv run pytest            # the suite
 ```
 
 Add or update tests for the change — see the testing table in the
-[Developer Guide](docs/DEVELOPING.md#8-testing). The keystone is
+[Developer Guide](docs/DEVELOPING.md#10-testing). The keystone is
 `tests/test_recompute.py`, which hand-verifies the budget math.
+
+If you touched `web/`, run its gate too — CI runs the same steps:
+
+```bash
+cd web
+npm run format           # prettier, in place; CI verifies with format:check
+npm run typecheck        # tsc, strict
+npm run lint             # eslint
+npm test                 # vitest
+npm run build            # the production bundle still builds
+```
 
 Commit with [conventional-commit](https://www.conventionalcommits.org/) messages
 matching the issue type (`feat: …`, `fix: …`).
@@ -119,8 +141,10 @@ conventional-commit prefix (`feat:`/`fix:`/`refactor:`/`perf:`/`ci:`/`docs:`).
 
 Two things run automatically on the PR:
 
-- **CI (`ci` workflow) is the hard gate.** It runs ruff lint, ruff
-  format-check, mypy (strict), and pytest. Red here blocks merge — treat any
+- **CI (`ci` workflow) is the hard gate.** It runs three jobs: the Python
+  gate (ruff lint, ruff format-check, mypy strict, pytest), the web gate
+  (prettier, tsc, eslint, vitest, production build), and a build of both
+  Docker images. Red here blocks merge — treat any
   failure as must-fix. Open a failing job's log to see the actual error.
 - **The Claude review is advisory.** It posts a summary comment plus inline
   comments on anything worth a look, and flags whether the change needs docs
@@ -171,8 +195,13 @@ Claude to take a look.
 - **uv only** — never global `pip`. `uv add` / `uv run` / `uv sync`.
 - **Fix lint findings, don't suppress them** — prefer a rename or refactor over
   an ignore rule.
-- **Keep `domain/` pure** — no SQLAlchemy, no Textual, no I/O; dependencies point
-  inward (see the architecture section of the
+- **Keep `domain/` pure** — no SQLAlchemy, no Textual, no FastAPI, no I/O;
+  dependencies point inward (see the architecture section of the
   [Developer Guide](docs/DEVELOPING.md#1-architecture-at-a-glance)).
+- **Rules live in the engine, once.** The terminal app and the web app are two
+  front ends over the same use cases; neither re-implements budget logic.
+- **In `web/`, the design system is the spec** — components use design tokens
+  (CSS variables) only, and generated files (`*.gen.*`) are never edited or
+  committed.
 - **A bot never gates merge.** CI is mechanical; the review is advice; a human
   approves and merges.

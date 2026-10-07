@@ -22,6 +22,10 @@ from .values import Cap, Day, Percentage, RestRouting
 # Section — no real section may take this name (see ``Month.add_section``).
 INCOME_SECTION_NAME = "income"
 
+# How many section accents the palette has (tui/theme.py SECTION_PALETTE and the
+# web design tokens section-1 … section-8).
+SECTION_COLORS = 8
+
 
 class SectionKind(StrEnum):
     TAX = "tax"
@@ -114,6 +118,10 @@ class Section:
     carried_rest: Money = dc_field(default_factory=Money.zero)
     fields: list[Field] = dc_field(default_factory=list)
     id: int | None = None
+    # Appearance, chosen by the user: a palette slot (1–8) and an icon name.
+    # None means "not chosen" — the colour then follows the section's position.
+    color: int | None = None
+    icon: str | None = None
     # computed by Month.recompute()
     available: Money = dc_field(default_factory=Money.zero)
     consumed: Money = dc_field(default_factory=Money.zero)

@@ -1,0 +1,55 @@
+name: release
+
+# Publish a GitHub Release for a version tag (v*) on a commit that is part of
+# main's history. Monay is run from source with Docker (`docker compose up`),
+# so a release is the tagged source plus its notes — there is nothing to build
+# here. That the images build is checked on every PR by ci.yml.
+#
+# A git tag is its own ref, not "on" a branch, so a tag that points at a commit
+# which is not on main is ignored (nothing is published).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # create releases
+
+jobs:
+  # A git tag is its own ref, not "on" a branch. This gate enforces that the
+  # tagged commit is part of main's history before anything is released, so a
+  # tag pushed on a stray feature branch can't cut a release.
+  guard:
+    name: tag must be on main
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need full history + origin/main to test ancestry
+      - id: check
+        run: |
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tag $GITHUB_REF_NAME is on main — releasing."
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Tag $GITHUB_REF_NAME is not on main; skipping the release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    name: release
+    needs: guard
+    if: needs.guard.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Publish the release
+        # --generate-notes builds a "What's Changed" list from every PR merged
+        # since the previous tag. PR titles become the changelog entries.
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Monay $GITHUB_REF_NAME" \
+            --generate-notes

@@ -1,0 +1,17 @@
+.splash {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
+/* White in dark mode, ink in white mode — and on the ground, not on glass. */
+.wordmark {
+  color: var(--text-strong);
+}
+
+.card {
+  width: min(420px, calc(100vw - 2 * var(--space-4)));
+}

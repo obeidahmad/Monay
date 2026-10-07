@@ -1,0 +1,21 @@
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-strong);
+  font: 800 14px/1 var(--font-sans);
+}
+
+.filled {
+  color: var(--on-fill);
+}
+
+.sm {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}

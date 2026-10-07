@@ -172,3 +172,39 @@ def test_migration_from_v1_adds_budget_pct(engine):
     with SqlAlchemyUnitOfWork(engine) as uow:
         loaded = uow.months.get(pid, MonthKey(2025, 1))  # legacy rows load as fixed
     assert all(f.budget_pct is None for s in loaded.sections for f in s.fields)
+
+
+def test_section_appearance_roundtrip(engine):
+    pid = _seed(engine)
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        month = uow.months.get(pid, MonthKey(2025, 1))
+        month.edit_section("Needs", color=5, icon="shopping-cart")
+        uow.months.save(month)
+        uow.commit()
+
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        loaded = uow.months.get(pid, MonthKey(2025, 1))
+    assert (loaded.section("Needs").color, loaded.section("Needs").icon) == (
+        5,
+        "shopping-cart",
+    )
+    assert loaded.section("Wants").color is None  # never chosen -> by position
+
+
+def test_migration_from_v2_adds_section_appearance(engine):
+    pid = _seed(engine)
+    # Rewind to a v2 database: drop the columns m0003 adds and reset the version.
+    with engine.begin() as conn:
+        conn.exec_driver_sql("ALTER TABLE sections DROP COLUMN color")
+        conn.exec_driver_sql("ALTER TABLE sections DROP COLUMN icon")
+        conn.execute(sa.delete(schema_version))
+        conn.execute(schema_version.insert().values(version=2))
+
+    run_migrations(engine)
+
+    with engine.begin() as conn:
+        columns = {c["name"] for c in sa.inspect(conn).get_columns("sections")}
+    assert {"color", "icon"} <= columns
+    with SqlAlchemyUnitOfWork(engine) as uow:
+        loaded = uow.months.get(pid, MonthKey(2025, 1))  # legacy rows: not chosen
+    assert all(s.color is None and s.icon is None for s in loaded.sections)

@@ -19,7 +19,7 @@ def main() -> None:
 
     # MONAY_SELFCHECK builds + wires everything and hits the database (so a
     # missing migration / table surfaces) without starting the event loop — a
-    # no-TTY smoke test for the packaged binary. See .github/workflows/build.yml.
+    # no-TTY smoke test for a locally packaged binary (monay.spec).
     if os.environ.get("MONAY_SELFCHECK"):
         service.resume()  # queries the profiles table
         from monay import __version__  # confirms the baked-in version resolved

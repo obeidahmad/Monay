@@ -2,11 +2,12 @@
 
 # 💰 Monay
 
-**A modern terminal app for zero-based budgeting — with monthly rollover, pockets, and a flexible section model.**
+**Zero-based budgeting with monthly rollover, pockets, and a flexible section model — in your browser or your terminal.**
 
-Built with Python 3.14 · a pure budgeting engine behind a [Textual](https://textual.textualize.io/) terminal UI.
+Built with Python 3.14 · one pure budgeting engine behind a React web app and a [Textual](https://textual.textualize.io/) terminal UI.
 
 ![Python](https://img.shields.io/badge/python-3.14-3776AB?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/web-React-61DAFB?logo=react&logoColor=white)
 ![Textual](https://img.shields.io/badge/TUI-Textual-5A4FCF)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -14,11 +15,15 @@ Built with Python 3.14 · a pure budgeting engine behind a [Textual](https://tex
 
 ---
 
-Monay brings **zero-based, envelope-style budgeting** to the terminal — give
-every dollar a job, then watch what you don't spend roll forward in its pot.
-You define your own **sections** and **fields**, log spending as you go, and at
-month-end **close** the month — unused money rolls forward, pots carry over, and
-the next month is created for you automatically.
+Monay is **zero-based, envelope-style budgeting** — give every dollar a job,
+then watch what you don't spend roll forward in its pot. You define your own
+**sections** and **fields**, log spending as you go, and at month-end **close**
+the month — unused money rolls forward, pots carry over, and the next month is
+created for you automatically.
+
+It comes with two front ends over the same engine and the same database: a
+**web app** you click through, and the original **terminal app** you type
+commands into.
 
 ```
  Monay  ┃ Budget ┃ Transactions │ Pockets │ Settings      Docs │ History
@@ -44,28 +49,45 @@ the next month is created for you automatically.
 - **Pockets** — per-account "how much should I have here right now?" counters, so you can reconcile against reality.
 - **Borrowing, modeled honestly** — fields and sections can go negative (red) and heal over future months; supports one-time "advance" budgets.
 - **Expressions everywhere** — type `15.71+1.35` or `(7.81)/2+6.5` for any amount.
-- **Command-driven** — everything happens by typing bare-verb commands in one bar; arrows are only for navigation.
+- **Two ways in** — a web app with buttons, forms and undo (dark and light, desktop and phone), or a terminal app where everything is a bare-verb command in one bar.
 - **Money done right** — `Decimal`, 4-decimal storage with banker's rounding; no floats ever touch a value.
 - **Multiple profiles** — fully independent budgets in one app.
 
 ## 🚀 Install & run
 
-### Standalone binary (no Python needed)
+### Web app, with Docker
 
-Download the binary for your OS/arch from the [**Releases**](../../releases)
-page, then run it from a terminal:
+The quickest way to run Monay. You need [Docker](https://docs.docker.com/get-docker/)
+and nothing else:
 
 ```bash
-# Linux / macOS
-chmod +x monay-linux-x86_64
-./monay-linux-x86_64
-
-# Windows (PowerShell)
-.\monay-windows-x86_64.exe
+git clone https://github.com/obeidahmad/Monay
+cd Monay
+docker compose up --build        # then open http://localhost:8080
 ```
 
-> Monay stores your data in a `monay.db` file in the **current working
-> directory**, so run it from a folder you'll remember.
+That starts two containers: the engine (`api`) and the web UI (`web`). Your
+budget is kept in a Docker volume (`monay-data`), so it survives restarts,
+rebuilds and `docker compose down`.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `MONAY_PORT` | `8080` | The port the web app is served on. |
+| `MONAY_BIND` | `127.0.0.1` | The address it listens on. Monay has **no login**, so by default only this computer can reach it. Set `0.0.0.0` to use it from other devices — only on a network you trust. |
+
+```bash
+MONAY_PORT=9000 docker compose up --build       # serve on another port
+docker compose down                             # stop (your budget is kept)
+docker compose down --volumes                   # stop and DELETE your budget
+```
+
+Already have a `monay.db` from the terminal app? Copy it into the volume once,
+while the stack is stopped (this replaces whatever budget the volume holds):
+
+```bash
+docker compose run --rm --no-deps -v "$PWD/monay.db:/import.db:ro" api cp /import.db /data/monay.db
+docker compose up
+```
 
 ### From source (developers)
 
@@ -74,9 +96,23 @@ management.
 
 ```bash
 uv sync                      # create the venv + install deps (fetches Python 3.14)
-uv run python -m monay       # launch the app
+uv run python -m monay       # launch the terminal app
 uv run pytest                # run the test suite
 ```
+
+> The terminal app stores your data in a `monay.db` file in the **current
+> working directory**, so run it from a folder you'll remember.
+
+To work on the web app, run the engine's API and the UI's dev server side by
+side (the second needs [Node.js](https://nodejs.org/) 24+):
+
+```bash
+uv run python -m monay.api   # the API, on http://127.0.0.1:8000
+cd web && npm install && npm run dev   # the UI, on http://localhost:5173
+```
+
+Both front ends read and write the same `monay.db`, so you can switch between
+them freely.
 
 ## 🧩 Concepts
 
@@ -109,7 +145,32 @@ Underspend and the pot grows (capped at MAX); overspend and it goes **red** and
 is repaid by future budgets. A section's unused slice is its **REST**, which on
 close routes to next month's income, back into the section, or into another one.
 
-## 📖 Using Monay
+## 🖱️ Using the web app
+
+Navigation sits on the left: **Budget**, **Transactions**, **Pockets** and
+**Analytics**, with settings and your profile below. The month you are looking
+at is a button at the top right — past months are one click away there.
+
+- **Budget** opens on the month at a glance — income, how much of it is spent,
+  what is left — then where the income comes from, and a card per **section**
+  with its icon, its colour and a bar of spent against available.
+- **Click a section** to open its own page: its fields with a meter each, a
+  gauge of how much is used, spending by field, the month's trend, and every
+  transaction in it. Add and edit fields there.
+- **Make a section yours**: pick its colour and icon when you add or edit it.
+- **Spend** with **Add transaction**: pick a field (the ones you used last are
+  one click away), type an amount — `15.71+1.35` works, and the result and what
+  the field will have left show as you type — and save.
+- **Analytics** answers one question per chart: where spending is heading,
+  what share went where, where income goes, which days you spent on, and how
+  the months compare.
+- **Undo instead of "are you sure?"**: deleting something happens immediately
+  and offers **Undo**. Only closing a month and deleting a profile ask first,
+  because those can't be taken back.
+- **Close month** shows what will carry forward before you confirm.
+- **Appearance** (Settings): dark, light, or follow your system.
+
+## 📖 Using the terminal app
 
 Everything is a typed command. Names are case-insensitive; quote names with
 spaces (`"Emergency Fund"`); amounts accept arithmetic.
@@ -182,17 +243,17 @@ read-only in **History** (`month 2025-01` to view, `month` to return).
 
 ## 🏗️ Building a standalone binary
 
-PyInstaller produces a one-file binary; it bundles the host interpreter, so
-**build on the OS/arch you're targeting** (no cross-compiling).
+The terminal app can still be packaged into a one-file binary on your own
+machine. PyInstaller bundles the host interpreter, so **build on the OS/arch
+you're targeting** (no cross-compiling).
 
 ```bash
 uv sync --no-dev --group build
 uv run --group build pyinstaller monay.spec    # → dist/monay  (or dist/monay.exe)
 ```
 
-The [`.github/workflows/build.yml`](.github/workflows/build.yml) workflow builds
-**Linux** and **Windows** binaries for both **x86_64** and **arm64**, and
-publishes them as a stable versioned release on each **`v*`** tag (see
+Releases no longer ship binaries: Monay is now a web app first, run with
+Docker, and a release is the tagged source (see
 [docs/RELEASING.md](docs/RELEASING.md)).
 
 ## 📁 Project layout
@@ -203,7 +264,10 @@ monay/
   data/        SQLAlchemy Core adapters, schema, migrations, unit of work
   app/         use-case services + the spec-driven command registry
   tui/         Textual app: shell, command bar, theme, screens, widgets
+  api/         HTTP API (FastAPI) over the same use cases — what the web app talks to
   bootstrap.py composition root (dependency-injector container)
+web/           the web app: React + TypeScript, built from the Monay design system
+docker/        nginx config for the web container (see Dockerfile, compose.yaml)
 tests/         unit + engine + adapter + headless-TUI tests
 docs/          DEVELOPING (code guide)
 ```

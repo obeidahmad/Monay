@@ -1,0 +1,18 @@
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.title {
+  font: var(--type-title-widget);
+  color: var(--text-strong);
+}
+
+.text {
+  max-width: 320px;
+  font: var(--type-caption);
+  color: var(--text-muted);
+}

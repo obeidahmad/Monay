@@ -1,0 +1,334 @@
+.chart svg,
+.donutWrap svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart svg:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.cross {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.tick {
+  fill: var(--text-muted);
+  font: var(--type-chart-tick);
+}
+
+.dataLabel {
+  fill: var(--text);
+  font: var(--type-chart-label);
+}
+
+.line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.ring {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.mark {
+  cursor: pointer;
+  outline: none;
+  transition: filter 150ms ease-out;
+}
+
+.mark:hover,
+.mark:focus-visible {
+  filter: brightness(1.18);
+}
+
+/* --- tooltip --- */
+.tip {
+  position: fixed;
+  z-index: 50;
+  min-width: 150px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  pointer-events: none;
+  transform: translateY(-100%);
+}
+
+.tipTitle {
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font: 700 12px/16px var(--font-sans);
+}
+
+.tipRow {
+  display: grid;
+  grid-template-columns: 14px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  font: 500 13px/20px var(--font-sans);
+}
+
+.tipRow i {
+  display: block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.tipRow b {
+  color: var(--text-strong);
+  font: var(--type-tooltip-value);
+}
+
+.tipRow span {
+  color: var(--text-muted);
+}
+
+/* --- legend --- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.lineKey {
+  width: 18px;
+  height: 0;
+}
+
+/* --- meter --- */
+.track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--chart-track);
+  overflow: hidden;
+}
+
+.trackLg {
+  height: 14px;
+}
+
+.track i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width 300ms ease-out;
+}
+
+.word-info,
+.word-warn,
+.word-error {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.word-info {
+  color: var(--info);
+}
+
+.word-warn {
+  color: var(--warn);
+}
+
+.word-error {
+  color: var(--error);
+}
+
+.wordMuted {
+  color: var(--text-muted);
+}
+
+/* --- gauge --- */
+.gauge {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: 240px;
+  margin: 0 auto;
+  font: var(--type-caption);
+}
+
+.gaugeValue {
+  fill: var(--text-strong);
+  font: 800 30px/1 var(--font-sans);
+}
+
+.gaugeCaption {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- stat tile --- */
+.stat {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+}
+
+.statValue {
+  color: var(--text-strong);
+  font: 800 26px/32px var(--font-sans);
+  white-space: nowrap;
+}
+
+.tone-neg {
+  color: var(--error);
+}
+
+.tone-pos {
+  color: var(--ok);
+}
+
+.tone-warn {
+  color: var(--warn);
+}
+
+.delta {
+  color: var(--text-muted);
+  font: 600 12px/18px var(--font-sans);
+}
+
+/* --- donut --- */
+.donutWrap {
+  display: grid;
+  grid-template-columns: minmax(140px, 190px) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.donutWrap .legend {
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.donutWrap .legend li {
+  justify-content: flex-start;
+}
+
+.donutWrap .legend b {
+  margin-left: auto;
+  padding-left: var(--space-3);
+  white-space: nowrap;
+}
+
+.donut {
+  width: 100%;
+}
+
+.donutValue {
+  fill: var(--text-strong);
+  font: 800 20px/1 var(--font-sans);
+}
+
+.status {
+  margin-top: var(--space-2);
+  font: 600 13px/18px var(--font-sans);
+}
+
+/* --- heatmap --- */
+.heat {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 40px));
+  gap: 4px;
+  justify-content: start;
+}
+
+.heatHead {
+  color: var(--text-muted);
+  font: var(--type-chart-tick);
+  text-align: center;
+}
+
+.cell {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font: var(--type-chart-tick);
+  outline: none;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--info);
+}
+
+.future {
+  border: 1px dashed var(--chart-axis);
+  background: none;
+}
+
+.today {
+  box-shadow: 0 0 0 2px var(--text-strong);
+}
+
+.heatKey {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  font: var(--type-chart-tick);
+}
+
+.heatKey i {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .donutWrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .donut {
+    max-width: 190px;
+  }
+
+  .donutWrap .legend {
+    width: 100%;
+  }
+}

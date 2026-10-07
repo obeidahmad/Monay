@@ -1,0 +1,131 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-5);
+  border-radius: 22px;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  transition:
+    transform 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120% 90% at 100% 0%,
+    color-mix(in srgb, var(--accent) 26%, transparent),
+    transparent 62%
+  );
+}
+
+button.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--glass-border));
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 80%, var(--bg-base));
+  color: var(--on-fill);
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.name b {
+  color: var(--text-strong);
+  font: 800 18px/24px var(--font-sans);
+}
+
+.figure {
+  display: grid;
+  gap: 2px;
+}
+
+.counter {
+  color: var(--text-strong);
+  font: 800 34px/40px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.counter:global(.neg) {
+  color: var(--error);
+}
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+
+.bar i {
+  min-width: 3px;
+  border-radius: 3px;
+}
+
+.bar i:first-child {
+  border-start-start-radius: var(--radius-pill);
+  border-end-start-radius: var(--radius-pill);
+}
+
+.bar i:last-child {
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
+}
+
+.parts {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.parts > span {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.parts i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.parts > span > :last-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.parts > .none {
+  display: block;
+}

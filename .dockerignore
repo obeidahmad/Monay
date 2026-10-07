@@ -1,0 +1,42 @@
+# What a Docker build may see. Everything here stays out of the build context —
+# and so out of every image layer.
+
+# Your budget: the database holds REAL finances. Never in an image.
+*.db
+*.sqlite
+*.sqlite3
+legacy_excel/
+
+# Version control, editors, local tooling
+.git
+.github
+.idea
+.vscode
+.claude
+
+# Python: local environments, caches, build output
+.venv
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+build
+dist
+# Written by a local hatch-vcs build; the image generates its own.
+monay/_version.py
+
+# Web: dependencies, build output, generated files (the image regenerates them)
+web/node_modules
+web/dist
+web/openapi.json
+web/src/api/schema.gen.ts
+web/src/styles/tokens.gen.css
+
+# Not needed to build either image
+docs
+tests
+*.md
+compose.yaml
+Dockerfile
+.dockerignore

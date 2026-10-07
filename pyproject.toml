@@ -11,6 +11,8 @@ dependencies = [
     "textual>=8.2.7",
     "sqlalchemy>=2.0",
     "dependency-injector>=4.49",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
 ]
 
 [dependency-groups]
@@ -26,6 +28,7 @@ dev = [
     "openpyxl>=3.1", # only for the throwaway legacy_excel/ inspection scripts; app never imports Excel
     "ruff>=0.9",
     "mypy>=1.18",
+    "httpx2>=2.13.1",
 ]
 
 # Not a distributable package (yet): uv just manages the environment.

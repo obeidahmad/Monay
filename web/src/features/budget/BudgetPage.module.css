@@ -1,0 +1,343 @@
+/* --- the month at a glance ------------------------------------------------ */
+.overview {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: center;
+  padding: var(--space-6);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+/* A wash of the brand colour behind the hero, so the page opens on colour. */
+.overview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      70% 120% at 0% 0%,
+      color-mix(in srgb, var(--brand-mint) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      60% 120% at 100% 100%,
+      color-mix(in srgb, var(--section-3) 22%, transparent),
+      transparent 70%
+    );
+}
+
+.heroBlock {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.hero {
+  color: var(--text-strong);
+  font: 800 64px/68px var(--font-sans);
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.hero span {
+  font-size: 34px;
+  letter-spacing: 0;
+}
+
+.heroMeter {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 520px;
+  margin-top: var(--space-3);
+}
+
+.meterLine {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.meterLine b {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.tiles > * {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+}
+
+/* --- income + spending ----------------------------------------------------- */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-4);
+}
+
+.empty {
+  color: var(--text-muted);
+  font: var(--type-body);
+}
+
+.incomes {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.incomes li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+}
+
+.incomeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--income-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--income-accent) 22%, transparent);
+}
+
+.incomeText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.incomeText b {
+  color: var(--text-strong);
+  font: var(--type-title-widget);
+}
+
+.incomeText small {
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.incomeAmount {
+  color: var(--text-strong);
+  font: 800 18px/24px var(--font-sans);
+}
+
+/* --- sections --------------------------------------------------------------- */
+.sections {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.sectionsHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.heading {
+  color: var(--text-strong);
+  font: 800 22px/28px var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.check {
+  font: 600 13px/18px var(--font-sans);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: 22px;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    transform 150ms ease-out,
+    box-shadow 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+/* The section's own colour, washed across the card. */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120% 90% at 0% 0%,
+    color-mix(in srgb, var(--accent) 30%, transparent),
+    transparent 62%
+  );
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--glass-border));
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 18px 44px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cardName {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName b {
+  overflow: hidden;
+  color: var(--text-strong);
+  font: 800 18px/24px var(--font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardName small {
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.chevron {
+  color: var(--text-muted);
+  transition: transform 150ms ease-out;
+}
+
+.card:hover .chevron {
+  color: var(--text-strong);
+  transform: translateX(3px);
+}
+
+.cardFigure {
+  display: grid;
+  gap: 2px;
+}
+
+.cardRest {
+  color: var(--text-strong);
+  font: 800 34px/40px var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+.cardRest:global(.neg) {
+  color: var(--error);
+}
+
+.cardMeter {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cardMeter p {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.cardMeter b {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.cardFoot {
+  color: var(--text-muted);
+  font: var(--type-caption);
+}
+
+.addCard {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-2);
+  min-height: 220px;
+  padding: var(--space-5);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 22px;
+  background: none;
+  color: var(--text-muted);
+  font: var(--type-caption);
+  text-align: center;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
+}
+
+.addCard b {
+  color: var(--text-strong);
+  font: var(--type-title-widget);
+}
+
+.addCard span {
+  max-width: 220px;
+}
+
+.addCard:hover {
+  background: color-mix(in srgb, var(--surface-raised) 50%, transparent);
+  color: var(--text-strong);
+}
+
+.phoneActions {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .overview {
+    grid-template-columns: 1fr;
+    padding: var(--space-5);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    font-size: 46px;
+    line-height: 52px;
+  }
+
+  .hero span {
+    font-size: 26px;
+  }
+
+  .tiles > * {
+    padding: var(--space-3);
+  }
+
+  .phoneActions {
+    display: flex;
+  }
+}

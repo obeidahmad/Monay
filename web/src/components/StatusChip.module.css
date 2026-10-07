@@ -1,0 +1,33 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  color: var(--text);
+  font: 700 12px/18px var(--font-sans);
+  white-space: nowrap;
+}
+
+.glyph {
+  display: inline-flex;
+  align-items: center;
+}
+
+.open .glyph {
+  color: var(--ok);
+}
+
+.closed .glyph {
+  color: var(--text-muted);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.warn {
+  color: var(--warn);
+}

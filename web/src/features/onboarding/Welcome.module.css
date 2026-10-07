@@ -1,0 +1,37 @@
+.welcome {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-6);
+  min-height: 100dvh;
+  padding: var(--space-4);
+}
+
+.wordmark {
+  color: var(--text-strong);
+}
+
+.card {
+  width: min(440px, calc(100vw - 2 * var(--space-4)));
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.title {
+  font: var(--type-title-page);
+  color: var(--text-strong);
+}
+
+.text {
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.error {
+  font: var(--type-field-error);
+  color: var(--error);
+}

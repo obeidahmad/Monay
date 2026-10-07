@@ -1,0 +1,97 @@
+/* Buttons are pills. Secondary = glass-strong with blur-sm; the single primary
+   action of a view = action on on-action. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  backdrop-filter: blur(var(--blur-sm));
+  color: var(--text-strong);
+  font: 600 14px/20px var(--font-sans);
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+/* Disabled drops to 40%; the form says why next to it. */
+.button:disabled {
+  opacity: 0.4;
+}
+
+/* The one primary action of a view: the brand mint, so it is unmistakable. */
+.primary {
+  padding-inline: 22px;
+  border-color: transparent;
+  background: linear-gradient(140deg, #5cf0b0, var(--brand-mint) 55%, #12a8b8);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--brand-ink);
+  font-weight: 700;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--brand-mint) 30%, transparent);
+}
+
+.primary:hover:not(:disabled) {
+  background: linear-gradient(140deg, #5cf0b0, var(--brand-mint) 55%, #12a8b8);
+  filter: brightness(1.08);
+}
+
+.danger {
+  color: var(--error);
+}
+
+.ghost {
+  min-height: 0;
+  padding: 4px 8px;
+  border-color: transparent;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--info);
+  font-weight: 700;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+
+.sm {
+  min-height: 32px;
+  padding: 5px 12px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.block {
+  width: 100%;
+}
+
+.icon {
+  flex: none;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Touch targets are at least 44px. */
+@media (max-width: 640px) {
+  .button:not(.ghost, .sm) {
+    min-height: 44px;
+  }
+
+  .icon {
+    width: 44px;
+  }
+}

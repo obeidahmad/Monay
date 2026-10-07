@@ -1,0 +1,65 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 64px;
+  animation: arrive 150ms ease-out;
+}
+
+.row + .row {
+  border-top: 1px solid var(--border-subtle);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  font: var(--type-title-widget);
+  color: var(--text-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  overflow: hidden;
+  font: var(--type-caption);
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amount {
+  font: var(--type-amount);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.spend {
+  color: var(--col-paid);
+}

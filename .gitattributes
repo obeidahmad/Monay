@@ -9,3 +9,7 @@
 # Treat these as binary.
 *.xlsx binary
 *.db binary
+
+# Machine-written: collapse in diffs, keep out of language stats.
+uv.lock linguist-generated
+web/package-lock.json linguist-generated

@@ -1,8 +1,7 @@
 name: ci
 
-# The HARD merge gate: lint + format + type check + tests must pass on every PR
-# and on every push to main. build.yml stays separate — it only runs on version
-# tags to cut binary releases.
+# The HARD merge gate: every job here must pass on every PR and on every push
+# to main. release.yml stays separate — it only runs on version tags.
 on:
   pull_request:
   push:
@@ -37,3 +36,55 @@ jobs:
 
       - name: Tests
         run: uv run pytest
+
+  web:
+    name: web · format + type check + lint + tests + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      # The web app's API types are generated from the engine's OpenAPI
+      # document, so this job needs the Python package too.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate API types and design tokens
+        run: npm run gen
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  # What people actually run is the two images, so prove they still build.
+  docker:
+    name: docker images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the api and web images
+        run: docker compose build

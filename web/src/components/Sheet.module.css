@@ -1,0 +1,122 @@
+.sheet {
+  width: min(480px, calc(100vw - 2 * var(--space-4)));
+  max-width: none;
+  max-height: min(760px, calc(100dvh - 2 * var(--space-5)));
+  padding: 0;
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  overflow: hidden;
+  /* Sheets slide up 200ms; nothing bounces. */
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+
+@starting-style {
+  .sheet[open] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+.sheet::backdrop {
+  background: var(--scrim);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  padding: var(--space-5);
+  gap: var(--space-4);
+}
+
+.handle {
+  display: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  font: 800 22px/28px var(--font-sans);
+  color: var(--text-strong);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 0;
+  /* Room for focus rings, which the scroll container would otherwise clip. */
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.error {
+  font: var(--type-field-error);
+  color: var(--error);
+}
+
+.missing {
+  font: var(--type-caption);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Phones: a bottom sheet, full width, buttons stacked with Save first. */
+@media (max-width: 640px) {
+  .sheet {
+    width: 100%;
+    max-height: calc(100dvh - var(--space-5));
+    margin: auto 0 0;
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  @starting-style {
+    .sheet[open] {
+      transform: translateY(100%);
+    }
+  }
+
+  .form {
+    padding: var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+
+  .handle {
+    display: block;
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--border-strong);
+  }
+
+  .footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .footer > button {
+    width: 100%;
+  }
+
+  .spacer {
+    display: none;
+  }
+}
