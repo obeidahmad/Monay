@@ -1,0 +1,49 @@
+# Monay in two containers: the budgeting engine and the web UI.
+#
+#   docker compose up --build        then open http://localhost:8080
+#
+# Your budget lives in the `monay-data` volume; it survives `down` and
+# rebuilds. (`docker compose down --volumes` deletes it.)
+
+name: monay
+
+services:
+  # The engine: the Python domain + SQLite behind an HTTP API.
+  api:
+    build:
+      context: .
+      target: api
+      args:
+        MONAY_VERSION: ${MONAY_VERSION:-0.0.0.dev0}
+    image: monay-api
+    restart: unless-stopped
+    volumes:
+      - monay-data:/data
+    # No published port: only `web` talks to it, over the compose network.
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # The UI: the built React app on nginx, which forwards /api to the engine.
+  web:
+    build:
+      context: .
+      target: web
+    image: monay-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Bound to this machine only. Monay has no login, so it is not offered to
+      # the network unless you ask: MONAY_BIND=0.0.0.0 (e.g. to use it from a
+      # phone on a network you trust).
+      - "${MONAY_BIND:-127.0.0.1}:${MONAY_PORT:-8080}:8080"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  monay-data:
