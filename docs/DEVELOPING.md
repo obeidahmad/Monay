@@ -405,6 +405,7 @@ asking first. Only closing a month and deleting a profile use a
 ```
 uv run pytest                         # everything
 uv run pytest tests/test_recompute.py # the engine's keystone test
+cd web && npm test                    # the web app's unit tests (vitest)
 ```
 
 | Layer | How it's tested | DB? |
@@ -414,19 +415,32 @@ uv run pytest tests/test_recompute.py # the engine's keystone test
 | `MonthCloser` | close the sample → next month | no |
 | Mutators & invariants | edge cases (cap, negative carry, advance, guards) | no |
 | Application services | parsed command strings on a **fake UoW** | no |
-| SQLAlchemy adapters | round-trip + guards on `:memory:` | yes |
+| SQLAlchemy adapters, migrations | round-trip + guards on `:memory:`; rewind the schema, migrate | yes |
 | TUI | Textual `run_test()` smoke | fake |
+| Revision hash, undo journal | pure units (`test_budgeting.py`) | no |
+| HTTP API | `TestClient` on the real app + engine (`test_api.py`) | `:memory:` |
+| Web money maths | vitest on `web/src/lib` (`*.test.ts` beside the code) | no |
 
 `tests/fixtures/sample_budget.py` is a small, neutral budget with round numbers,
 designed so every value is hand-verifiable against §3's formulas while
 exercising the interesting behaviors.
 
-**Not covered yet:** the HTTP API (`api/`, `app/budgeting.py`) and the web app
-have no automated tests, and CI does not build `web/`. The first web milestone
-was verified by driving the real stack end to end — the sample budget through
-the API against the engine's hand-verified numbers, and the UI in a browser.
-Turning that into `TestClient` tests for the API and a `web/` job in CI is the
-next step.
+`tests/test_api.py` builds that same sample budget through the HTTP API and
+checks it against the same hand-verified numbers, so the API cannot drift from
+the engine unnoticed. It also covers what only exists at that layer: the
+`If-Match` revision check, undo, error codes and which input they name.
+
+The web tests cover the code that must agree with the engine to the last digit:
+money formatting and rounding (`money.ts`), the amount-expression evaluator
+(`expression.ts`) and the LEFT preview (`budget.ts`).
+
+CI (`.github/workflows/ci.yml`) runs three jobs on every PR: the Python gate,
+the web gate (prettier, tsc, eslint, vitest, production build) and a build of
+both Docker images.
+
+**Not covered yet:** the React components and whole-app flows in a browser.
+Those are still checked by hand; component tests and a Playwright run against
+the Docker stack are the next step.
 
 ## 11. Running & building
 
@@ -452,7 +466,7 @@ The web app runs beside it, forwarding `/api` to the API:
 cd web
 npm install
 npm run dev                  # http://localhost:5173 (regenerates types + tokens first)
-npm run typecheck && npm run lint
+npm run typecheck && npm run lint && npm test
 ```
 
 ### Docker
@@ -474,5 +488,6 @@ no `.git` in a build context for hatch-vcs to read):
 
 ### Standalone binaries
 
-The terminal app is also packaged by PyInstaller (`monay.spec`) and CI
-(`.github/workflows/build.yml`); see the README's build section.
+The terminal app can still be packaged locally by PyInstaller (`monay.spec`);
+see the README's build section. CI no longer builds or publishes binaries — the
+web app needs a server and a browser, so Docker is how Monay ships.

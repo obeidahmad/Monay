@@ -23,7 +23,8 @@ The dev server forwards `/api` to the API (`vite.config.ts`). Point it elsewhere
 | `npm run gen`       | export the OpenAPI document, then generate the API types and the token CSS |
 | `npm run typecheck` | `tsc`, strict                                                              |
 | `npm run lint`      | ESLint                                                                     |
-| `npm run format`    | Prettier, in place                                                         |
+| `npm test`          | Vitest: the `*.test.ts` files beside the code in `src/lib`                 |
+| `npm run format`    | Prettier, in place (`format:check` only verifies, as CI does)              |
 
 ## Generated files
 

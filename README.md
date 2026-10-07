@@ -89,23 +89,6 @@ docker compose run --rm --no-deps -v "$PWD/monay.db:/import.db:ro" api cp /impor
 docker compose up
 ```
 
-### Terminal app: standalone binary (no Python needed)
-
-Download the binary for your OS/arch from the [**Releases**](../../releases)
-page, then run it from a terminal:
-
-```bash
-# Linux / macOS
-chmod +x monay-linux-x86_64
-./monay-linux-x86_64
-
-# Windows (PowerShell)
-.\monay-windows-x86_64.exe
-```
-
-> Monay stores your data in a `monay.db` file in the **current working
-> directory**, so run it from a folder you'll remember.
-
 ### From source (developers)
 
 Monay uses [**uv**](https://docs.astral.sh/uv/) for environment and dependency
@@ -116,6 +99,9 @@ uv sync                      # create the venv + install deps (fetches Python 3.
 uv run python -m monay       # launch the terminal app
 uv run pytest                # run the test suite
 ```
+
+> The terminal app stores your data in a `monay.db` file in the **current
+> working directory**, so run it from a folder you'll remember.
 
 To work on the web app, run the engine's API and the UI's dev server side by
 side (the second needs [Node.js](https://nodejs.org/) 24+):
@@ -257,17 +243,17 @@ read-only in **History** (`month 2025-01` to view, `month` to return).
 
 ## 🏗️ Building a standalone binary
 
-PyInstaller produces a one-file binary; it bundles the host interpreter, so
-**build on the OS/arch you're targeting** (no cross-compiling).
+The terminal app can still be packaged into a one-file binary on your own
+machine. PyInstaller bundles the host interpreter, so **build on the OS/arch
+you're targeting** (no cross-compiling).
 
 ```bash
 uv sync --no-dev --group build
 uv run --group build pyinstaller monay.spec    # → dist/monay  (or dist/monay.exe)
 ```
 
-The [`.github/workflows/build.yml`](.github/workflows/build.yml) workflow builds
-**Linux** and **Windows** binaries for both **x86_64** and **arm64**, and
-publishes them as a stable versioned release on each **`v*`** tag (see
+Releases no longer ship binaries: Monay is now a web app first, run with
+Docker, and a release is the tagged source (see
 [docs/RELEASING.md](docs/RELEASING.md)).
 
 ## 📁 Project layout
